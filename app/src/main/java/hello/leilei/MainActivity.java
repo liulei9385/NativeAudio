@@ -1,7 +1,9 @@
-package hello.leilei.activity;
+package hello.leilei;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
+import android.content.Context;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
@@ -9,6 +11,8 @@ import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.util.TimeUtils;
 import android.support.v7.app.AlertDialog;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.Menu;
@@ -22,8 +26,10 @@ import android.widget.TextView;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
-import hello.leilei.R;
-import hello.leilei.activity.base.BaseUiLoadActivity;
+import hello.leilei.base.BaseUiLoadActivity;
+import hello.leilei.base.decoration.LinearDividerItemDecoration;
+import hello.leilei.base.ui.adapter.AdapterPresenter;
+import hello.leilei.base.ui.adapter.MvpRecyclerAdapter;
 import hello.leilei.nativeaudio.FileFind;
 import hello.leilei.nativeaudio.NativeAudio;
 import hello.leilei.utils.CollectionUtils;
@@ -57,6 +63,9 @@ public class MainActivity extends BaseUiLoadActivity {
     @BindView(R.id.infoText)
     TextView infoText;
 
+    @BindView(R.id.recyclerView)
+    RecyclerView mRecyclerView;
+
     public static final String RQ_AUDIO = Manifest.permission.RECORD_AUDIO;
     //局部变量数据
     private List<String> mp3FileList;//文件列表
@@ -67,6 +76,15 @@ public class MainActivity extends BaseUiLoadActivity {
     private ConnectableObservable<Void> searchFileObser;
     private Subscription seachFileSubscri;
     private Subscription changeProgressSubscri;
+
+    private AdapterPresenter<String> adapterPresenter;
+
+    public static void start(Context context) {
+        Intent starter = new Intent(context, MainActivity.class);
+        //starter.putExtra();
+        context.startActivity(starter);
+    }
+
 
     @SuppressLint("HandlerLeak")
     @Override
@@ -89,6 +107,23 @@ public class MainActivity extends BaseUiLoadActivity {
             RxUiUtils.postDelayedRxOnMain(10L, () -> showSToast("播放结束"));
 
         });
+
+        adapterPresenter = new AdapterPresenter<>();
+        MvpRecyclerAdapter<String> adapter = new MvpRecyclerAdapter.Builder<String>()
+                .setLayoutId(android.R.layout.simple_list_item_1)
+                .setPresenter(adapterPresenter)
+                .build((holder, s) -> holder.setText(android.R.id.text1, s));
+        mRecyclerView.setAdapter(adapter);
+        mRecyclerView.setLayoutManager(new LinearLayoutManager(this));
+        mRecyclerView.addItemDecoration(new LinearDividerItemDecoration.Builder(this).build());
+
+        getSearchFileObserable();
+        searchFileObser.subscribe(aVoid -> adapterPresenter.addAllItem(mp3FileList),
+                Throwable::printStackTrace);
+
+        searchFileObser.connect();
+        searchFileObser.refCount();
+
     }
 
     @Override
@@ -269,22 +304,22 @@ public class MainActivity extends BaseUiLoadActivity {
 
     private void startToScanMusic() {
         //不用每次搜索,浪费资源
-        if (searchFileObser == null) {
-            searchFileObser = Observable.fromCallable((Func0<Void>) () -> {
-                File sdDir = FileUtils.getExternalSdDir(MainActivity.this);
-                if (sdDir != null)
-                    mp3FileList = FileFind.getMp3FileFromPath(sdDir.getPath());
-                return null;
-            })//
-                    .compose(RxUiUtils.applySchedulers())
-                    .publish();
-        }
-
         RxUiUtils.unsubscribe(seachFileSubscri);
         seachFileSubscri = searchFileObser.subscribe(a -> RxUiUtils.postDelayedRxOnMain(10L, () -> {
             int size = mp3FileList != null ? mp3FileList.size() : 0;
             showSToast("扫描到" + size + "个文件");
         }), Throwable::printStackTrace);
+    }
+
+    private void getSearchFileObserable() {
+        searchFileObser = Observable.fromCallable((Func0<Void>) () -> {
+            File sdDir = FileUtils.getExternalSdDir(MainActivity.this);
+            if (sdDir != null)
+                mp3FileList = FileFind.getMp3FileFromPath(sdDir.getPath());
+            return null;
+        })//
+                .compose(RxUiUtils.applySchedulers())
+                .publish();
     }
 
     @Override

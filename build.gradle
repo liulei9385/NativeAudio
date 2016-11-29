@@ -58,6 +58,15 @@ ext {
     okhttpws = 'com.squareup.okhttp3:okhttp-ws:3.4.2'
     gson = 'com.google.code.gson:gson:2.8.0'
 
+    rxbindingVersion = '0.4.0'
+    rxbinding = 'com.jakewharton.rxbinding:rxbinding:' + rxbindingVersion
+    rxbinding_support_v4 = 'com.jakewharton.rxbinding:rxbinding-support-v4:' + rxbindingVersion
+    rxbinding_appcompat_v7 = 'com.jakewharton.rxbinding:rxbinding-appcompat-v7:' + rxbindingVersion
+    rxbinding_recyclerview_v7 = 'com.jakewharton.rxbinding:rxbinding-recyclerview-v7:' + rxbindingVersion
+    rxbinding_design = 'com.jakewharton.rxbinding:rxbinding-design:' + rxbindingVersion
+
     timber = 'com.jakewharton.timber:timber:4.3.1'
+    // 图片加载器
+    glide = 'com.github.bumptech.glide:glide:3.7.0'
 
 }

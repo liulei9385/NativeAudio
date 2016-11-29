@@ -1,7 +1,5 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!--
 /*
- * Copyright (C) 2010 The Android Open Source Project
+ * Copyright 2016, The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,8 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
--->
-<resources>
-    <string name="app_name">NativeAudio</string>
-    <string name="loading">加载中&#8230;</string>
-</resources>
+
+package hello.leilei.base;
+
+public interface BaseView<T> {
+
+    void setPresenter(T presenter);
+
+}

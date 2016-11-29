@@ -44,5 +44,13 @@ dependencies {
     apt "${rootProject.ext.butterknife_compiler}"
     compile "${rootProject.ext.butterknife}"
 
+    compile "${rootProject.ext.rxbinding}"
+    compile "${rootProject.ext.rxbinding_support_v4}"
+    compile "${rootProject.ext.rxbinding_appcompat_v7}"
+    compile "${rootProject.ext.rxbinding_recyclerview_v7}"
+    compile "${rootProject.ext.rxbinding_design}"
+    //图片加载
+    compile "${rootProject.ext.glide}"
+
     compile project(':library')
 }

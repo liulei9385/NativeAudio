@@ -3,7 +3,7 @@
  * Copyright (c) 2016. Hefei Royalstar Electronic Appliance Group Co., Ltd. All rights reserved.
  */
 
-package hello.leilei.activity.base;
+package hello.leilei.base;
 
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;

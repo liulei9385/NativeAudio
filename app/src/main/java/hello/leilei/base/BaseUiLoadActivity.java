@@ -1,4 +1,4 @@
-package hello.leilei.activity.base;
+package hello.leilei.base;
 
 import android.os.Bundle;
 import android.view.LayoutInflater;
