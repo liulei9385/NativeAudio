@@ -1,0 +1,2 @@
+sudo javah -classpath /home/liulei/AndroidStudioProjects/NativeAudio/app/src/main/java -bootclasspath /home/liulei/Android/Sdk/platforms/android-23/android.jar
+-d /home/liulei/AndroidStudioProjects/NativeAudio/app/src/main/jni hello.leilei.hello.leilei.nativeaudio.NativeAudio

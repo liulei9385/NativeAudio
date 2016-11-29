@@ -1,0 +1,341 @@
+package hello.leilei.activity;
+
+import android.Manifest;
+import android.annotation.SuppressLint;
+import android.content.DialogInterface;
+import android.content.pm.PackageManager;
+import android.os.Build;
+import android.os.Bundle;
+import android.os.Message;
+import android.support.annotation.NonNull;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.util.TimeUtils;
+import android.support.v7.app.AlertDialog;
+import android.text.TextUtils;
+import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.ArrayAdapter;
+import android.widget.ImageView;
+import android.widget.SeekBar;
+import android.widget.TextView;
+
+import java.io.File;
+import java.util.List;
+
+import hello.leilei.R;
+import hello.leilei.activity.base.BaseActivity;
+import hello.leilei.activity.base.BaseUiLoadActivity;
+import hello.leilei.nativeaudio.FileFind;
+import hello.leilei.nativeaudio.NativeAudio;
+import hello.leilei.ui.UIhandler;
+import hello.leilei.utils.CollectionUtils;
+import hello.leilei.utils.FileUtils;
+
+/**
+ * Created by liulei on 16-3-18.
+ * TIME : 下午9:43
+ * COMMECTS :
+ */
+public class MainActivity extends BaseUiLoadActivity {
+
+    ImageView playImgView, nextImgView, previousImgView;
+    SeekBar musicSeekbar;
+    TextView infoText;
+
+    public static final String RQ_AUDIO = Manifest.permission.RECORD_AUDIO;
+    //ui传传递
+    static UIhandler<? extends BaseActivity> uiHandler;
+    //局部变量数据
+    private List<String> mp3FileList;//文件列表
+    private int selectIndex = -1;
+    //Thread暂存变量
+    private Thread searcMp3Thread;
+    //static final
+    public static final int WHAT_SET_SEEK_PROGRESS = 1;
+    public static final int WHAT_CHANGE_SEEKBAR = 2;
+    //native-audio
+    NativeAudio mNativeAudio;
+
+    @SuppressLint("HandlerLeak")
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        uiHandler = new UIhandler<BaseActivity>(this) {
+            @Override
+            public void handleMessage(Message msg) {
+                super.handleMessage(msg);
+                MainActivity act = (MainActivity) getItem();
+                if (act != null)
+                    (act).handlerMessage(msg);
+            }
+        };
+        mNativeAudio = NativeAudio.getInstance();
+    }
+
+    private void handlerMessage(Message msg) {
+        final int what = msg.what;
+        switch (what) {
+            case WHAT_SET_SEEK_PROGRESS:
+                int progress = msg.arg1;
+                if (progress >= 10000)
+                    progress = 10000;
+                else if (progress < 0)
+                    progress = 0;
+                musicSeekbar.setProgress(progress);
+                break;
+            case WHAT_CHANGE_SEEKBAR:
+
+                long duration = NativeAudio.getDutration();
+                long position = NativeAudio.getPostion();
+
+                //getDuratioForFile();
+                if (duration > 0L && position >= 0) {
+                    Message message = uiHandler.obtainMessage(WHAT_SET_SEEK_PROGRESS,
+                            (int) ((double) position / duration * 10000), -1);
+                    System.out.println("MainActivity.handlerMessage##" + (message.arg1));
+                    uiHandler.sendMessageDelayed(message, 10);
+                }
+                uiHandler.sendEmptyMessageDelayed(what, 1000 + 200);
+                break;
+        }
+    }
+
+    @Override
+    public void initView() {
+        playImgView = findView(R.id.media_play);
+        nextImgView = findView(R.id.play_next);
+        previousImgView = findView(R.id.play_previous);
+        musicSeekbar = findView(R.id.musicSeekbar);
+        infoText = findView(R.id.infoText);
+    }
+
+    public void configUi() {
+        setClickListenrForViews(playImgView, nextImgView, previousImgView);
+        //for seekbar
+        musicSeekbar.setProgress(0);
+        musicSeekbar.setEnabled(false);
+
+        mNativeAudio.setPlayOverListener(new NativeAudio.OnPlayOverListener() {
+            @Override
+            public void onPlayOver() {
+
+                uiHandler.removeMessages(WHAT_CHANGE_SEEKBAR);
+
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        showSToast("播放结束");
+                    }
+                });
+            }
+        });
+    }
+
+    @Override
+    protected void obtainData() {
+
+        int gratId = ActivityCompat.checkSelfPermission(this, RQ_AUDIO);
+        if (gratId != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, new String[]{RQ_AUDIO}, 2);
+        } else
+            initAudio();
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
+            gratId = ActivityCompat.checkSelfPermission(this,
+                    Manifest.permission.READ_EXTERNAL_STORAGE);
+            if (gratId != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(this,
+                        new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, 3);
+            }
+        }
+    }
+
+    private void playMp3Music(String uri) {
+        NativeAudio.setPlayingUriAudioPlayer(false);
+        boolean isSuccess = NativeAudio.createUriAudioPlayer(uri);
+        if (isSuccess) {
+            NativeAudio.setPlayingUriAudioPlayer(true);
+            musicSeekbar.setEnabled(true);
+
+            String newUri = uri.substring(uri.lastIndexOf("/") + 1);
+            infoText.setText(newUri);
+            uiHandler.removeMessages(WHAT_CHANGE_SEEKBAR);
+            uiHandler.sendEmptyMessage(WHAT_CHANGE_SEEKBAR);
+        }
+    }
+
+    @Override
+    protected void onViewClicked(int id, View view) {
+        if (view == playImgView) {
+            int state = NativeAudio.getPlayingUriAudioPlayer();
+            //* 0 stoped 1 play 2 pause -1 error
+            if (state != -1) {
+                if (state == 0) {
+                    playImgView.setImageResource(R.drawable.ic_play);
+                    selectAFileToPlay();
+                } else if (state == 1) {
+                    playImgView.setImageResource(R.drawable.ic_pause);
+                    NativeAudio.setPlayingUriAudioPlayer(false);
+                } else {
+                    playImgView.setImageResource(R.drawable.ic_play);
+                    NativeAudio.setPlayingUriAudioPlayer(true);
+                }
+            } else {
+                selectAFileToPlay();
+            }
+        }
+    }
+
+    private void getDuratioForFile() {
+        StringBuilder sb = new StringBuilder("Time:\t");
+        TimeUtils.formatDuration(NativeAudio.getDutration(), sb);
+        Log.e("NativeAudio", "duration##" + sb.toString());
+    }
+
+    private void selectAFileToPlay() {
+        if (!CollectionUtils.isEmpty(mp3FileList)) {
+            if (selectIndex >= 0 && selectIndex < mp3FileList.size()) {
+                String mp3Path = mp3FileList.get(selectIndex);
+                playMp3Music(mp3Path);
+                return;
+            }
+        }
+        showSToast("请选择要播放的音乐文件");
+    }
+
+    /**
+     * 显示选择音乐的播放列表
+     */
+    private void showSeListDialog(List<String> musicList) {
+        AlertDialog.Builder mBuilder = new AlertDialog.Builder(this);
+        final ArrayAdapter<String> arrayAdapter = new ArrayAdapter<String>(this,
+                android.R.layout.simple_list_item_1, android.R.id.text1,
+                musicList) {
+            @Override
+            public View getView(int position, View convertView, ViewGroup parent) {
+                View mView = super.getView(position, convertView, parent);
+                TextView mText = (TextView) mView.findViewById(android.R.id.text1);
+                if (mText != null) {
+                    String item = getItem(position);
+                    if (!TextUtils.isEmpty(item)) {
+                        item = item.substring(item.lastIndexOf("/") + 1);
+                        mText.setText(item);
+                    }
+                }
+                return mView;
+            }
+        };
+        mBuilder.setTitle("选择歌曲")//
+                .setAdapter(arrayAdapter, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        //执行播放音乐
+                        selectIndex = which;
+                        String mp3Pth = arrayAdapter.getItem(which);
+                        if (!TextUtils.isEmpty(mp3Pth))
+                            playMp3Music(mp3Pth);
+                        else showSToast("音乐文件路径为空");
+                    }
+                })//
+                .setNegativeButton("取消", null)//
+                .create()
+                .show();
+    }
+
+    private void initAudio() {
+        // initialize native audio system
+        NativeAudio.createEngine();
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode,
+                                           @NonNull String[] permissions,
+                                           @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (grantResults.length == 1 && requestCode == 2) {
+            if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                initAudio();
+            }
+        } else if (grantResults.length == 1 && requestCode == 3) {
+            if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                //req code
+            }
+        }
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        //NativeAudio.setPlayingUriAudioPlayer(false);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        NativeAudio.setPlayingUriAudioPlayer(true);
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.media_select, menu);
+        return true;
+    }
+
+    private void startToScanMusic() {
+        //不用每次搜索,浪费资源
+        if (searcMp3Thread == null || (!searcMp3Thread.isAlive())
+                || searcMp3Thread.isInterrupted()) {
+            searcMp3Thread = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    File sdDir = FileUtils.getExternalSdDir(MainActivity.this);
+                    if (sdDir != null) {
+                        mp3FileList = FileFind.getMp3FileFromPath(sdDir.getPath());
+                        uiHandler.postDelayed(new Runnable() {
+                            @Override
+                            public void run() {
+                                int size = mp3FileList != null ? mp3FileList.size() : 0;
+                                showSToast("扫描到" + size + "个文件");
+                            }
+                        }, 25);
+                    }
+                }
+            });
+            searcMp3Thread.start();
+        }
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        final int itemId = item.getItemId();
+        switch (itemId) {
+            case R.id.media_scan:
+                startToScanMusic();
+                break;
+            case R.id.media_sel:
+                //显示选择歌曲弹窗　
+                if (!CollectionUtils.isEmpty(mp3FileList)) {
+                    showSeListDialog(mp3FileList);
+                } else
+                    showSToast("未搜索到音乐文件,请添加音乐文件");
+                break;
+        }
+        return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    protected int getLayoutResource() {
+        return R.layout.activity_main;
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        NativeAudio.shutdown();
+        if (uiHandler != null)
+            uiHandler.deleteMessages();
+    }
+}
