@@ -7,3 +7,4 @@
 /captures
 app/libs/
 library/src/main/res/drawable/
+.externalNativeBuild/

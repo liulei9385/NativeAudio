@@ -1,76 +1,37 @@
-buildscript {
-    repositories {
-        jcenter()
-    }
-    dependencies {
-        classpath 'com.android.tools.build:gradle-experimental:0.7.0-alpha3'
-    }
-}
+apply plugin: 'com.android.library'
 
-apply plugin: 'com.android.model.library'
+android {
 
-model {
-    android {
-        compileSdkVersion = 23
-        buildToolsVersion = "23.0.2"
+    compileSdkVersion 24
+    buildToolsVersion "24.0.3"
 
-        defaultConfig.with {
-            minSdkVersion.apiLevel = 15
-            targetSdkVersion.apiLevel = 23
-            versionCode = 1
-            versionName = "1.0"
+    defaultConfig {
+        minSdkVersion 15
+        targetSdkVersion 24
+        ndk {
+            abiFilters 'x86', 'x86_64', 'armeabi', 'armeabi-v7a', 'arm64-v8a'
+        }
+        externalNativeBuild {
+            cmake {
+                arguments '-DANDROID_PLATFORM=android-19',
+                        '-DANDROID_TOOLCHAIN=clang'
+            }
         }
     }
-
-    android.ndk {
-        moduleName = "native-audio-jni"
-        CFlags.add("-UNDEBUG")
-        ldLibs.addAll(["log", "OpenSLES", "android"])
-        debuggable = false
-        renderscriptNdkMode = false
-        platformVersion = 19
-    }
-
-    android.productFlavors {
-        create("all") {
-            ndk.abiFilters.addAll(["armeabi", "armeabi-v7a", "x86"])
-        }
-        /*create ("arm8") {
-            ndk.abiFilters.add("arm64-v8a")
-        }
-        create ("x86-32") {
-            ndk.abiFilters.add("x86")
-        }*/
-    }
-
-    android.buildTypes {
+    buildTypes {
         release {
-            //useProguard = false
-            proguardFiles.add(file('proguard-rules.txt'))
-            //shrinkResources = true
-        }
-        debug {
-            debuggable = true
-            useProguard = false
+            minifyEnabled = false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'),
+                    'proguard-rules.pro'
         }
     }
-
-    android.lintOptions {
-        checkReleaseBuilds = false
-    }
-}
-
-task copyAppToAarDir(type: Copy) {
-    dependsOn 'assembleRelease'
-    from('build/outputs/aar')
-    into('../audio_library')
-    //include '**/*release.aar'
-    exclude { details ->
-        details.file.absolutePath.contains("debug")
+    externalNativeBuild {
+        cmake {
+            path 'src/main/jni/CMakeLists.txt'
+        }
     }
 }
 
 dependencies {
-    compile fileTree(include: ['*.jar'], dir: 'libs')
-    //compile 'com.android.support:appcompat-v7:23.2.1'
+    compile "com.android.support:appcompat-v7:${rootProject.ext.support_version}"
 }
