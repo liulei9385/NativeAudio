@@ -5,11 +5,16 @@ buildscript {
         jcenter()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:2.2.0'
 
+        classpath 'com.android.tools.build:gradle:2.2.0'
+        classpath 'com.neenbedankt.gradle.plugins:android-apt:1.8'
+        classpath 'me.tatarka:gradle-retrolambda:3.4.0'
+
+        classpath 'me.tatarka.retrolambda.projectlombok:lombok.ast:0.2.3.a2'
         // NOTE: Do not place your application dependencies here; they belong
         // in the individual module build.gradle files
     }
+    configurations.classpath.exclude group: 'com.android.tools.external.lombok'
 }
 
 allprojects {
@@ -18,14 +23,41 @@ allprojects {
     }
 }
 
-ext {
-    support_version = "24.2.1"
-}
-
 task wrapper(type: Wrapper) {
     gradleVersion = '2.14.1'
 }
 
 task clean(type: Delete) {
     delete rootProject.buildDir
+}
+
+ext {
+
+    support_version = '24.2.1'
+    support_annotations = 'com.android.support:support-annotations:' + support_version
+    support_core_ui = 'com.android.support:support-core-ui:' + support_version
+    support_v4 = 'com.android.support:support-v4:' + support_version
+    support_v7 = 'com.android.support:appcompat-v7:' + support_version
+    recyclerview_v7 = 'com.android.support:recyclerview-v7:' + support_version
+    // design 包括 v4,v7
+    support_design = 'com.android.support:design:' + support_version
+
+    // 异步
+    rxandroid = 'io.reactivex:rxandroid:1.2.1'
+    rxjava = 'io.reactivex:rxjava:1.2.2'
+
+    // 注解
+    butterknifeVersion = '8.4.0'
+    butterknife = 'com.jakewharton:butterknife:' + butterknifeVersion
+    butterknife_compiler = 'com.jakewharton:butterknife-compiler:' + butterknifeVersion
+
+    // http网络库
+    okhttp = 'com.squareup.okhttp3:okhttp:3.4.2'
+    okio = 'com.squareup.okio:okio:1.11.0'
+    okhttp_interceptor = 'com.squareup.okhttp3:logging-interceptor:3.4.2'
+    okhttpws = 'com.squareup.okhttp3:okhttp-ws:3.4.2'
+    gson = 'com.google.code.gson:gson:2.8.0'
+
+    timber = 'com.jakewharton.timber:timber:4.3.1'
+
 }

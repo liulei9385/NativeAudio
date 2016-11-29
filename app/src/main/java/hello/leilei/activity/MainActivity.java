@@ -2,11 +2,9 @@ package hello.leilei.activity;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
-import android.content.DialogInterface;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.Message;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.util.TimeUtils;
@@ -21,18 +19,24 @@ import android.widget.ArrayAdapter;
 import android.widget.ImageView;
 import android.widget.SeekBar;
 import android.widget.TextView;
-
-import java.io.File;
-import java.util.List;
-
+import butterknife.BindView;
+import butterknife.ButterKnife;
+import butterknife.OnClick;
 import hello.leilei.R;
-import hello.leilei.activity.base.BaseActivity;
 import hello.leilei.activity.base.BaseUiLoadActivity;
 import hello.leilei.nativeaudio.FileFind;
 import hello.leilei.nativeaudio.NativeAudio;
-import hello.leilei.ui.UIhandler;
 import hello.leilei.utils.CollectionUtils;
 import hello.leilei.utils.FileUtils;
+import hello.leilei.utils.RxUiUtils;
+import rx.Observable;
+import rx.Subscription;
+import rx.functions.Func0;
+import rx.observables.ConnectableObservable;
+
+import java.io.File;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Created by liulei on 16-3-18.
@@ -41,96 +45,49 @@ import hello.leilei.utils.FileUtils;
  */
 public class MainActivity extends BaseUiLoadActivity {
 
-    ImageView playImgView, nextImgView, previousImgView;
+    @BindView(R.id.media_play)
+    ImageView playImgView;
+    @BindView(R.id.play_next)
+    ImageView nextImgView;
+    @BindView(R.id.play_previous)
+    ImageView previousImgView;
+
+    @BindView(R.id.musicSeekbar)
     SeekBar musicSeekbar;
+    @BindView(R.id.infoText)
     TextView infoText;
 
     public static final String RQ_AUDIO = Manifest.permission.RECORD_AUDIO;
-    //ui传传递
-    static UIhandler<? extends BaseActivity> uiHandler;
     //局部变量数据
     private List<String> mp3FileList;//文件列表
     private int selectIndex = -1;
-    //Thread暂存变量
-    private Thread searcMp3Thread;
-    //static final
-    public static final int WHAT_SET_SEEK_PROGRESS = 1;
-    public static final int WHAT_CHANGE_SEEKBAR = 2;
     //native-audio
-    NativeAudio mNativeAudio;
+    private NativeAudio mNativeAudio;
+
+    private ConnectableObservable<Void> searchFileObser;
+    private Subscription seachFileSubscri;
+    private Subscription changeProgressSubscri;
 
     @SuppressLint("HandlerLeak")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        uiHandler = new UIhandler<BaseActivity>(this) {
-            @Override
-            public void handleMessage(Message msg) {
-                super.handleMessage(msg);
-                MainActivity act = (MainActivity) getItem();
-                if (act != null)
-                    (act).handlerMessage(msg);
-            }
-        };
         mNativeAudio = NativeAudio.getInstance();
-    }
-
-    private void handlerMessage(Message msg) {
-        final int what = msg.what;
-        switch (what) {
-            case WHAT_SET_SEEK_PROGRESS:
-                int progress = msg.arg1;
-                if (progress >= 10000)
-                    progress = 10000;
-                else if (progress < 0)
-                    progress = 0;
-                musicSeekbar.setProgress(progress);
-                break;
-            case WHAT_CHANGE_SEEKBAR:
-
-                long duration = NativeAudio.getDutration();
-                long position = NativeAudio.getPostion();
-
-                //getDuratioForFile();
-                if (duration > 0L && position >= 0) {
-                    Message message = uiHandler.obtainMessage(WHAT_SET_SEEK_PROGRESS,
-                            (int) ((double) position / duration * 10000), -1);
-                    System.out.println("MainActivity.handlerMessage##" + (message.arg1));
-                    uiHandler.sendMessageDelayed(message, 10);
-                }
-                uiHandler.sendEmptyMessageDelayed(what, 1000 + 200);
-                break;
-        }
+        ButterKnife.bind(this);
     }
 
     @Override
-    public void initView() {
-        playImgView = findView(R.id.media_play);
-        nextImgView = findView(R.id.play_next);
-        previousImgView = findView(R.id.play_previous);
-        musicSeekbar = findView(R.id.musicSeekbar);
-        infoText = findView(R.id.infoText);
-    }
-
     public void configUi() {
-        setClickListenrForViews(playImgView, nextImgView, previousImgView);
+
         //for seekbar
         musicSeekbar.setProgress(0);
         musicSeekbar.setEnabled(false);
 
-        mNativeAudio.setPlayOverListener(new NativeAudio.OnPlayOverListener() {
-            @Override
-            public void onPlayOver() {
+        mNativeAudio.setPlayOverListener(() -> {
 
-                uiHandler.removeMessages(WHAT_CHANGE_SEEKBAR);
+            RxUiUtils.unsubscribe(changeProgressSubscri);
+            RxUiUtils.postDelayedRxOnMain(10L, () -> showSToast("播放结束"));
 
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        showSToast("播放结束");
-                    }
-                });
-            }
         });
     }
 
@@ -153,7 +110,44 @@ public class MainActivity extends BaseUiLoadActivity {
         }
     }
 
+    @OnClick({R.id.media_play, R.id.play_next, R.id.play_previous})
+    public void onClick(View view) {
+        final int viewId = view.getId();
+        switch (viewId) {
+
+            case R.id.media_play:
+
+                int state = NativeAudio.getPlayingUriAudioPlayer();
+                //* 0 stoped 1 play 2 pause -1 error
+                if (state != -1) {
+                    if (state == 0) {
+                        playImgView.setImageResource(R.drawable.ic_play);
+                        selectAFileToPlay();
+                    } else if (state == 1) {
+                        playImgView.setImageResource(R.drawable.ic_pause);
+                        NativeAudio.setPlayingUriAudioPlayer(false);
+                    } else {
+                        playImgView.setImageResource(R.drawable.ic_play);
+                        NativeAudio.setPlayingUriAudioPlayer(true);
+                    }
+                } else {
+                    selectAFileToPlay();
+                }
+
+                break;
+
+            case R.id.play_next:
+                break;
+
+            case R.id.play_previous:
+                break;
+
+        }
+    }
+
+
     private void playMp3Music(String uri) {
+
         NativeAudio.setPlayingUriAudioPlayer(false);
         boolean isSuccess = NativeAudio.createUriAudioPlayer(uri);
         if (isSuccess) {
@@ -162,30 +156,22 @@ public class MainActivity extends BaseUiLoadActivity {
 
             String newUri = uri.substring(uri.lastIndexOf("/") + 1);
             infoText.setText(newUri);
-            uiHandler.removeMessages(WHAT_CHANGE_SEEKBAR);
-            uiHandler.sendEmptyMessage(WHAT_CHANGE_SEEKBAR);
-        }
-    }
 
-    @Override
-    protected void onViewClicked(int id, View view) {
-        if (view == playImgView) {
-            int state = NativeAudio.getPlayingUriAudioPlayer();
-            //* 0 stoped 1 play 2 pause -1 error
-            if (state != -1) {
-                if (state == 0) {
-                    playImgView.setImageResource(R.drawable.ic_play);
-                    selectAFileToPlay();
-                } else if (state == 1) {
-                    playImgView.setImageResource(R.drawable.ic_pause);
-                    NativeAudio.setPlayingUriAudioPlayer(false);
-                } else {
-                    playImgView.setImageResource(R.drawable.ic_play);
-                    NativeAudio.setPlayingUriAudioPlayer(true);
-                }
-            } else {
-                selectAFileToPlay();
-            }
+            RxUiUtils.unsubscribe(changeProgressSubscri);
+            changeProgressSubscri = Observable.interval(0L, 1000L, TimeUnit.MICROSECONDS)
+                    .flatMap(aLong -> Observable.fromCallable((Func0<Integer>) () -> {
+                        long duration = NativeAudio.getDutration();
+                        long position = NativeAudio.getPostion();
+
+                        return (int) ((double) position / duration * 10000);
+                    }))//
+                    .subscribe(progress -> {
+                        if (progress >= 10000)
+                            progress = 10000;
+                        else if (progress < 0)
+                            progress = 0;
+                        musicSeekbar.setProgress(progress);
+                    }, Throwable::printStackTrace);
         }
     }
 
@@ -229,16 +215,13 @@ public class MainActivity extends BaseUiLoadActivity {
             }
         };
         mBuilder.setTitle("选择歌曲")//
-                .setAdapter(arrayAdapter, new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        //执行播放音乐
-                        selectIndex = which;
-                        String mp3Pth = arrayAdapter.getItem(which);
-                        if (!TextUtils.isEmpty(mp3Pth))
-                            playMp3Music(mp3Pth);
-                        else showSToast("音乐文件路径为空");
-                    }
+                .setAdapter(arrayAdapter, (dialog, which) -> {
+                    //执行播放音乐
+                    selectIndex = which;
+                    String mp3Pth = arrayAdapter.getItem(which);
+                    if (!TextUtils.isEmpty(mp3Pth))
+                        playMp3Music(mp3Pth);
+                    else showSToast("音乐文件路径为空");
                 })//
                 .setNegativeButton("取消", null)//
                 .create()
@@ -286,26 +269,22 @@ public class MainActivity extends BaseUiLoadActivity {
 
     private void startToScanMusic() {
         //不用每次搜索,浪费资源
-        if (searcMp3Thread == null || (!searcMp3Thread.isAlive())
-                || searcMp3Thread.isInterrupted()) {
-            searcMp3Thread = new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    File sdDir = FileUtils.getExternalSdDir(MainActivity.this);
-                    if (sdDir != null) {
-                        mp3FileList = FileFind.getMp3FileFromPath(sdDir.getPath());
-                        uiHandler.postDelayed(new Runnable() {
-                            @Override
-                            public void run() {
-                                int size = mp3FileList != null ? mp3FileList.size() : 0;
-                                showSToast("扫描到" + size + "个文件");
-                            }
-                        }, 25);
-                    }
-                }
-            });
-            searcMp3Thread.start();
+        if (searchFileObser == null) {
+            searchFileObser = Observable.fromCallable((Func0<Void>) () -> {
+                File sdDir = FileUtils.getExternalSdDir(MainActivity.this);
+                if (sdDir != null)
+                    mp3FileList = FileFind.getMp3FileFromPath(sdDir.getPath());
+                return null;
+            })//
+                    .compose(RxUiUtils.applySchedulers())
+                    .publish();
         }
+
+        RxUiUtils.unsubscribe(seachFileSubscri);
+        seachFileSubscri = searchFileObser.subscribe(a -> RxUiUtils.postDelayedRxOnMain(10L, () -> {
+            int size = mp3FileList != null ? mp3FileList.size() : 0;
+            showSToast("扫描到" + size + "个文件");
+        }), Throwable::printStackTrace);
     }
 
     @Override
@@ -314,6 +293,7 @@ public class MainActivity extends BaseUiLoadActivity {
         switch (itemId) {
             case R.id.media_scan:
                 startToScanMusic();
+                searchFileObser.connect();
                 break;
             case R.id.media_sel:
                 //显示选择歌曲弹窗　
@@ -335,7 +315,5 @@ public class MainActivity extends BaseUiLoadActivity {
     protected void onDestroy() {
         super.onDestroy();
         NativeAudio.shutdown();
-        if (uiHandler != null)
-            uiHandler.deleteMessages();
     }
 }

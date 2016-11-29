@@ -11,6 +11,7 @@ import android.support.v7.widget.Toolbar;
 import android.view.View;
 import android.widget.Toast;
 
+import butterknife.ButterKnife;
 import hello.leilei.R;
 
 public abstract class BaseActivity extends AppCompatActivity {
@@ -23,23 +24,13 @@ public abstract class BaseActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(getLayoutResource());
-        Toolbar mToolbar = findView(R.id.mtoolbar);
+        Toolbar mToolbar = ButterKnife.findById(this, R.id.mtoolbar);
         if (mToolbar != null) {
             setSupportActionBar(mToolbar);
         }
     }
 
     protected abstract int getLayoutResource();
-
-    @SuppressWarnings("unchecked")
-    protected <T extends View> T findView(int resId) {
-        return (T) this.findViewById(resId);
-    }
-
-    @SuppressWarnings("unchecked")
-    protected <T extends View> T findView(View view, int resId) {
-        return (T) view.findViewById(resId);
-    }
 
     @Override
     protected void onResume() {
