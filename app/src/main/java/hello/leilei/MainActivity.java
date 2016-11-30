@@ -37,6 +37,7 @@ import hello.leilei.utils.FileUtils;
 import hello.leilei.utils.RxUiUtils;
 import rx.Observable;
 import rx.Subscription;
+import rx.functions.Action4;
 import rx.functions.Func0;
 import rx.observables.ConnectableObservable;
 
@@ -110,12 +111,17 @@ public class MainActivity extends BaseUiLoadActivity {
 
         adapterPresenter = new AdapterPresenter<>();
         MvpRecyclerAdapter<String> adapter = new MvpRecyclerAdapter.Builder<String>()
-                .setLayoutId(android.R.layout.simple_list_item_1)
+                .setLayoutId(R.layout.adapter_list_item)
                 .setPresenter(adapterPresenter)
                 .build((holder, s) -> holder.setText(android.R.id.text1, s));
         mRecyclerView.setAdapter(adapter);
         mRecyclerView.setLayoutManager(new LinearLayoutManager(this));
         mRecyclerView.addItemDecoration(new LinearDividerItemDecoration.Builder(this).build());
+
+        adapter.setOnItemClickListener((viewGroup, view, s, integer) -> {
+            selectIndex = integer;
+            doPlayAction();
+        });
 
         getSearchFileObserable();
         searchFileObser.subscribe(aVoid -> adapterPresenter.addAllItem(mp3FileList),
@@ -146,28 +152,13 @@ public class MainActivity extends BaseUiLoadActivity {
     }
 
     @OnClick({R.id.media_play, R.id.play_next, R.id.play_previous})
-    public void onClick(View view) {
+    void onClick(View view) {
         final int viewId = view.getId();
         switch (viewId) {
 
             case R.id.media_play:
 
-                int state = NativeAudio.getPlayingUriAudioPlayer();
-                //* 0 stoped 1 play 2 pause -1 error
-                if (state != -1) {
-                    if (state == 0) {
-                        playImgView.setImageResource(R.drawable.ic_play);
-                        selectAFileToPlay();
-                    } else if (state == 1) {
-                        playImgView.setImageResource(R.drawable.ic_pause);
-                        NativeAudio.setPlayingUriAudioPlayer(false);
-                    } else {
-                        playImgView.setImageResource(R.drawable.ic_play);
-                        NativeAudio.setPlayingUriAudioPlayer(true);
-                    }
-                } else {
-                    selectAFileToPlay();
-                }
+               doPlayAction();
 
                 break;
 
@@ -180,6 +171,24 @@ public class MainActivity extends BaseUiLoadActivity {
         }
     }
 
+    void doPlayAction(){
+        int state = NativeAudio.getPlayingUriAudioPlayer();
+        //* 0 stoped 1 play 2 pause -1 error
+        if (state != -1) {
+            if (state == 0) {
+                playImgView.setImageResource(R.drawable.ic_pause);
+                selectAFileToPlay();
+            } else if (state == 1) {
+                playImgView.setImageResource(R.drawable.ic_play);
+                NativeAudio.setPlayingUriAudioPlayer(false);
+            } else {
+                playImgView.setImageResource(R.drawable.ic_play);
+                NativeAudio.setPlayingUriAudioPlayer(true);
+            }
+        } else {
+            selectAFileToPlay();
+        }
+    }
 
     private void playMp3Music(String uri) {
 
