@@ -7,8 +7,10 @@ import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
 import android.widget.ImageView;
 import butterknife.ButterKnife;
+import cn.bmob.v3.BmobUser;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.resource.drawable.GlideDrawable;
+import com.bumptech.glide.request.animation.GlideAnimation;
 import com.bumptech.glide.request.target.ImageViewTarget;
 import hello.leilei.utils.RxUiUtils;
 
@@ -30,9 +32,14 @@ public class SplashActivity extends AppCompatActivity {
                 .into(new ImageViewTarget<GlideDrawable>(splashIv) {
 
                     @Override
+                    public void onResourceReady(GlideDrawable resource, GlideAnimation<? super GlideDrawable> glideAnimation) {
+                        super.onResourceReady(resource, glideAnimation);
+                        RxUiUtils.postDelayedOnBg(1200L, () -> gotoMain());
+                    }
+
+                    @Override
                     protected void setResource(GlideDrawable resource) {
                         splashIv.setImageDrawable(resource);
-                        RxUiUtils.postDelayedOnBg(1200L, () -> gotoMain());
                     }
 
                     @Override
@@ -44,7 +51,12 @@ public class SplashActivity extends AppCompatActivity {
     }
 
     private void gotoMain() {
-        MainActivity.start(SplashActivity.this);
+        BmobUser currentUser = BmobUser.getCurrentUser();
+        if (currentUser == null) {
+            LoginActivity.start(this);
+        } else {
+            MainActivity.start(SplashActivity.this);
+        }
         overridePendingTransition(R.anim.ui_slide_in_right, R.anim.ui_slide_out_left);
         finish();
     }

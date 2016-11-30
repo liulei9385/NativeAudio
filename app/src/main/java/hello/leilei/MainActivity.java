@@ -8,24 +8,26 @@ import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
+import android.support.design.widget.NavigationView;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.util.TimeUtils;
+import android.support.v4.widget.DrawerLayout;
+import android.support.v7.app.ActionBar;
+import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AlertDialog;
-import android.support.v7.widget.LinearLayoutManager;
-import android.support.v7.widget.RecyclerView;
+import android.support.v7.widget.*;
+import android.support.v7.widget.Toolbar;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ArrayAdapter;
-import android.widget.ImageView;
-import android.widget.SeekBar;
-import android.widget.TextView;
+import android.widget.*;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
+import cn.bmob.v3.BmobUser;
 import hello.leilei.base.BaseUiLoadActivity;
 import hello.leilei.base.decoration.LinearDividerItemDecoration;
 import hello.leilei.base.ui.adapter.AdapterPresenter;
@@ -37,7 +39,6 @@ import hello.leilei.utils.FileUtils;
 import hello.leilei.utils.RxUiUtils;
 import rx.Observable;
 import rx.Subscription;
-import rx.functions.Action4;
 import rx.functions.Func0;
 import rx.observables.ConnectableObservable;
 
@@ -67,10 +68,18 @@ public class MainActivity extends BaseUiLoadActivity {
     @BindView(R.id.recyclerView)
     RecyclerView mRecyclerView;
 
+    @BindView(R.id.drawerLayout)
+    DrawerLayout mDrawerLayout;
+    @BindView(R.id.naviView)
+    NavigationView mNavigationView;
+
+    private ActionBarDrawerToggle drawerToggle;
+
     public static final String RQ_AUDIO = Manifest.permission.RECORD_AUDIO;
     //局部变量数据
     private List<String> mp3FileList;//文件列表
     private int selectIndex = -1;
+    private int cuttentPlayIndex = -1;
     //native-audio
     private NativeAudio mNativeAudio;
 
@@ -91,8 +100,33 @@ public class MainActivity extends BaseUiLoadActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        mNativeAudio = NativeAudio.getInstance();
+
+        ActionBar actionBar = getSupportActionBar();
+        if (actionBar != null) {
+            actionBar.setDisplayHomeAsUpEnabled(true);
+            actionBar.setDisplayShowHomeEnabled(true);
+        }
+
         ButterKnife.bind(this);
+
+        //创建返回键，并实现打开关/闭监听
+        Toolbar mToolbar = ButterKnife.findById(this, R.id.mtoolbar);
+        drawerToggle = new ActionBarDrawerToggle(this, mDrawerLayout, mToolbar
+                , R.string.openDrawer, R.string.closeDrawer);
+        drawerToggle.syncState();
+        mDrawerLayout.addDrawerListener(drawerToggle);
+
+        mNavigationView.setNavigationItemSelectedListener(item -> {
+            final int temId = item.getItemId();
+            switch (temId) {
+                case R.id.logout:
+                    BmobUser.logOut();
+                    break;
+            }
+            return false;
+        });
+
+        mNativeAudio = NativeAudio.getInstance();
     }
 
     @Override
@@ -158,7 +192,7 @@ public class MainActivity extends BaseUiLoadActivity {
 
             case R.id.media_play:
 
-               doPlayAction();
+                doPlayAction();
 
                 break;
 
@@ -167,26 +201,26 @@ public class MainActivity extends BaseUiLoadActivity {
 
             case R.id.play_previous:
                 break;
-
         }
     }
 
-    void doPlayAction(){
+    private void doPlayAction() {
         int state = NativeAudio.getPlayingUriAudioPlayer();
         //* 0 stoped 1 play 2 pause -1 error
-        if (state != -1) {
-            if (state == 0) {
-                playImgView.setImageResource(R.drawable.ic_pause);
-                selectAFileToPlay();
-            } else if (state == 1) {
-                playImgView.setImageResource(R.drawable.ic_play);
+        if (state == -1 || state == 0 || cuttentPlayIndex != selectIndex) {
+            if (state == 1) {
                 NativeAudio.setPlayingUriAudioPlayer(false);
-            } else {
                 playImgView.setImageResource(R.drawable.ic_play);
-                NativeAudio.setPlayingUriAudioPlayer(true);
             }
-        } else {
             selectAFileToPlay();
+        } else {
+            if (state == 1) {
+                NativeAudio.setPlayingUriAudioPlayer(false);
+                playImgView.setImageResource(R.drawable.ic_play);
+            } else if (state == 2) {
+                NativeAudio.setPlayingUriAudioPlayer(true);
+                playImgView.setImageResource(R.drawable.ic_pause);
+            }
         }
     }
 
@@ -230,6 +264,7 @@ public class MainActivity extends BaseUiLoadActivity {
             if (selectIndex >= 0 && selectIndex < mp3FileList.size()) {
                 String mp3Path = mp3FileList.get(selectIndex);
                 playMp3Music(mp3Path);
+                cuttentPlayIndex = selectIndex;
                 return;
             }
         }
@@ -352,7 +387,7 @@ public class MainActivity extends BaseUiLoadActivity {
 
     @Override
     protected int getLayoutResource() {
-        return R.layout.activity_main;
+        return R.layout.activity_main_drawer;
     }
 
     @Override

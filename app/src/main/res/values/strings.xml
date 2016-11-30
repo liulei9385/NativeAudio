@@ -19,4 +19,9 @@
 <resources>
     <string name="app_name">NativeAudio</string>
     <string name="loading">加载中&#8230;</string>
+    <string name="text_login">登录</string>
+    <string name="text_input_username">输入用户名</string>
+    <string name="text_input_pwd">输入密码</string>
+    <string name="openDrawer">open drawer</string>
+    <string name="closeDrawer">cloase drawer</string>
 </resources>

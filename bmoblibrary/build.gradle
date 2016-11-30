@@ -1,0 +1,64 @@
+apply plugin: 'com.android.library'
+apply plugin: 'maven'
+
+android {
+
+    compileSdkVersion 24
+    buildToolsVersion "24.0.3"
+
+    defaultConfig {
+        minSdkVersion 15
+        targetSdkVersion 24
+        ndk {
+            //'x86', 'x86_64',
+            abiFilters 'armeabi', 'armeabi-v7a', 'arm64-v8a'
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'),
+                    'proguard-rules.pro'
+        }
+    }
+
+}
+
+dependencies {
+
+    compile fileTree(dir: 'libs', include: ['*.jar'])
+    compile "${rootProject.ext.support_v7}"
+
+    compile "${rootProject.ext.okhttp}"
+    compile "${rootProject.ext.okio}"
+    compile "${rootProject.ext.gson}"
+
+    // rx
+    compile "${rootProject.ext.rxjava}"
+    compile "${rootProject.ext.rxandroid}"
+
+    /**兼容Android6.0系统所需，如果这句话报错，可在dependencies标签下使用compile 'cn.bmob.android:http-legacy:1.0'**/
+    compile 'cn.bmob.android:http-legacy:1.0'
+    //compile 'cn.bmob.android:bmob-sdk:3.5.3'
+}
+
+uploadArchives {
+    repositories{
+        mavenDeployer {
+            /*repository(url: "http://10.211.55.3:8081/nexus/content/repositories/com.tibby.hello/") {
+                authentication(userName: "admin", password: "admin123")
+            }*/
+            snapshotRepository(url: 'file:///C:/Users/liulei/maven_repo/') {
+                //authentication(userName: "admin", password: "admin123")
+            }
+            pom.project {
+                version = '0.0.2-SNAPSHOT'
+                artifactId = 'bmoblibrary'
+                groupId = "me.leilei.learncode"
+                packaging = 'aar'
+                description = "native audio bmob library"
+            }
+        }
+    }
+}

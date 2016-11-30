@@ -28,10 +28,17 @@ android {
         }
     }
 
-}
+    /* repositories {
+         flatDir {
+             dirs 'libs'
+         }
+     }*/
 
+}
 dependencies {
+
     compile fileTree(dir: 'libs', include: ['*.jar'])
+
     testCompile 'junit:junit:4.12'
     compile "${rootProject.ext.recyclerview_v7}"
     // design 包括 v4,v7
@@ -40,6 +47,12 @@ dependencies {
     // rx
     compile "${rootProject.ext.rxjava}"
     compile "${rootProject.ext.rxandroid}"
+
+    // okhttp
+    compile "${rootProject.ext.okhttp}"
+    compile "${rootProject.ext.okio}"
+    compile "${rootProject.ext.gson}"
+
     // butterknife
     apt "${rootProject.ext.butterknife_compiler}"
     compile "${rootProject.ext.butterknife}"
@@ -51,6 +64,11 @@ dependencies {
     compile "${rootProject.ext.rxbinding_design}"
     //图片加载
     compile "${rootProject.ext.glide}"
+    //compile "${rootProject.ext.gson}"
 
     compile project(':library')
+
+    //compile(name: 'bmoblibrary-release-1.0.0', ext: 'aar')
+    //compile project(':bmoblibrary')
+    compile 'me.leilei.learncode:bmoblibrary:0.0.2-SNAPSHOT@aar'
 }

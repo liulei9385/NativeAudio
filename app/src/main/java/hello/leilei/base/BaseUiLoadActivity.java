@@ -1,11 +1,6 @@
 package hello.leilei.base;
 
 import android.os.Bundle;
-import android.view.LayoutInflater;
-import android.view.View;
-import android.view.ViewGroup;
-import butterknife.ButterKnife;
-import hello.leilei.R;
 
 /**
  * think
@@ -16,15 +11,6 @@ public abstract class BaseUiLoadActivity extends BaseActivity {
 
     @Override
     protected abstract int getLayoutResource();
-
-    @Override
-    public void setContentView(int layoutResID) {
-        super.setContentView(R.layout.activity_base_uiload);
-        LayoutInflater inflater = LayoutInflater.from(this);
-        View rootView = ButterKnife.findById(this, R.id.baseUiLoad);
-        if (layoutResID != 0)
-            inflater.inflate(layoutResID, (ViewGroup) rootView, true);
-    }
 
     private boolean isLoad = false;
 
