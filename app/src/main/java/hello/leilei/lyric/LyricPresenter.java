@@ -4,6 +4,7 @@ import android.support.annotation.NonNull;
 import android.text.TextUtils;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 
 import hello.leilei.MainApplication;
@@ -19,6 +20,7 @@ import okio.Sink;
 import rx.Observable;
 import rx.functions.Action1;
 import rx.functions.Func1;
+import timber.log.Timber;
 
 /**
  * Created by liulei
@@ -44,9 +46,25 @@ public class LyricPresenter {
                     public Observable<String> call(LyricRecordBean lyricRecordBean) {
                         String path = lyricRecordBean.getFirstDownloadPath();
                         if (!TextUtils.isEmpty(path)) {
+
+                            // 先查看文件是否有内容呀
+                            File lyricFile = FileUtils.createSdCacheFile(MainApplication.getApp(), songName + ".lrc");
+                            try {
+
+                                FileInputStream fileInputStream = new FileInputStream(lyricFile);
+                                int available = fileInputStream.available();
+                                if (available > 0L)
+                                    return Observable.just(lyricFile.getPath());
+
+                            } catch (IOException ex) {
+                                ex.printStackTrace();
+                            }
+
                             return lyricApiService.downloadFileWithDynamicUrlSync(path)
                                     .map(responseBody -> {
-                                        File lyricFile = FileUtils.createSdCacheFile(MainApplication.getApp(), songName + ".lrc");
+
+                                        String filePath = lyricFile.getPath();
+
                                         BufferedSink bufferedSink = null;
                                         try {
                                             Sink sink = Okio.sink(lyricFile);
@@ -64,7 +82,7 @@ public class LyricPresenter {
                                                 e.printStackTrace();
                                             }
                                         }
-                                        return lyricFile.getPath();
+                                        return filePath;
                                     });
                         }
                         return Observable.error(new IllegalArgumentException("path was null," + songName + "was valid"));
