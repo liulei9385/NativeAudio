@@ -20,7 +20,7 @@ import android.content.res.AssetManager;
 
 public class NativeAudioBak {
 
-    OnPlayOverListener playOverListener;
+    private OnPlayOverListener playOverListener;
 
     public void doCallBack() {
         System.out.println("NativeAudioBak.doCallBack");

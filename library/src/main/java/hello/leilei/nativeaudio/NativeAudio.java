@@ -83,6 +83,8 @@ public class NativeAudio {
 
     public static native long getDutration();
 
+    public static native boolean setPostion(long millisecond);
+
     public static native long getPostion();
 
     /**

@@ -47,6 +47,7 @@ import rx.Observable;
 import rx.Subscription;
 import rx.functions.Func0;
 import rx.observables.ConnectableObservable;
+import timber.log.Timber;
 
 /**
  * Created by liulei on 16-3-18.
@@ -60,30 +61,35 @@ public class MainActivity extends BaseUiLoadActivity {
     public static final int PAUSED = 2;
     public static final int ERROR = -1;
 
-    @BindView(R.id.media_play)
-    ImageView playImgView;
-    @BindView(R.id.play_next)
-    ImageView nextImgView;
-    @BindView(R.id.play_previous)
-    ImageView previousImgView;
+    public static final int SEEKBAR_MAX = 1000;
+    private ActViewHolder mActViewHolder;
 
-    @BindView(R.id.musicSeekbar)
-    SeekBar musicSeekbar;
-    @BindView(R.id.infoText)
-    TextView infoText;
+    class ActViewHolder {
+        @BindView(R.id.media_play)
+        ImageView playImgView;
+        @BindView(R.id.play_next)
+        ImageView nextImgView;
+        @BindView(R.id.play_previous)
+        ImageView previousImgView;
 
-    @BindView(R.id.playDurationTv)
-    TextView playDurationTv;
-    @BindView(R.id.maxDurationTv)
-    TextView maxDurationTv;
+        @BindView(R.id.musicSeekbar)
+        SeekBar musicSeekbar;
+        @BindView(R.id.infoText)
+        TextView infoText;
 
-    @BindView(R.id.recyclerView)
-    RecyclerView mRecyclerView;
+        @BindView(R.id.playDurationTv)
+        TextView playDurationTv;
+        @BindView(R.id.maxDurationTv)
+        TextView maxDurationTv;
 
-    @BindView(R.id.drawerLayout)
-    DrawerLayout mDrawerLayout;
-    @BindView(R.id.naviView)
-    NavigationView mNavigationView;
+        @BindView(R.id.recyclerView)
+        RecyclerView mRecyclerView;
+
+        @BindView(R.id.drawerLayout)
+        DrawerLayout mDrawerLayout;
+        @BindView(R.id.naviView)
+        NavigationView mNavigationView;
+    }
 
     public static final String RQ_AUDIO = Manifest.permission.RECORD_AUDIO;
     //局部变量数据
@@ -116,16 +122,17 @@ public class MainActivity extends BaseUiLoadActivity {
             actionBar.setDisplayShowHomeEnabled(true);
         }
 
-        ButterKnife.bind(this);
+        ButterKnife.bind(mActViewHolder = new ActViewHolder(), this);
 
         //创建返回键，并实现打开关/闭监听
         Toolbar mToolbar = ButterKnife.findById(this, R.id.mtoolbar);
-        ActionBarDrawerToggle drawerToggle = new ActionBarDrawerToggle(this, mDrawerLayout, mToolbar
+        ActionBarDrawerToggle drawerToggle = new ActionBarDrawerToggle(this,
+                mActViewHolder.mDrawerLayout, mToolbar
                 , R.string.openDrawer, R.string.closeDrawer);
         drawerToggle.syncState();
-        mDrawerLayout.addDrawerListener(drawerToggle);
+        mActViewHolder.mDrawerLayout.addDrawerListener(drawerToggle);
 
-        mNavigationView.setNavigationItemSelectedListener(item -> {
+        mActViewHolder.mNavigationView.setNavigationItemSelectedListener(item -> {
             final int temId = item.getItemId();
             switch (temId) {
                 case R.id.logout:
@@ -142,8 +149,49 @@ public class MainActivity extends BaseUiLoadActivity {
     public void configUi() {
 
         //for seekbar
-        musicSeekbar.setProgress(0);
-        musicSeekbar.setEnabled(false);
+        mActViewHolder.musicSeekbar.setProgress(0);
+        mActViewHolder.musicSeekbar.setMax(SEEKBAR_MAX);
+        mActViewHolder.musicSeekbar.setEnabled(false);
+
+
+        mActViewHolder.musicSeekbar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+
+            boolean fromUser;
+            int sysProgress;
+            int userProgress;
+
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                this.fromUser = fromUser;
+                if (this.fromUser)
+                    this.userProgress = progress;
+                else this.sysProgress = progress;
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+            }
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+                if (!fromUser) return;
+                RxUiUtils.postDelayedOnBg(20L, () -> {
+
+                    RxUiUtils.unsubscribe(changeProgressSubscri);
+
+                    long dutration = NativeAudio.getDutration();
+                    if (dutration <= 0) return;
+
+                    long milisecond = (long) (dutration * (userProgress / (float) seekBar.getMax()));
+                    boolean success = NativeAudio.setPostion(milisecond);
+                    if (success) {
+                        Timber.d("NativeAudio.setPostion " + milisecond + "success");
+                    }
+                    changePlayProgress();
+
+                });
+            }
+        });
 
         mNativeAudio.setPlayOverListener(() -> {
             RxUiUtils.unsubscribe(changeProgressSubscri);
@@ -155,9 +203,9 @@ public class MainActivity extends BaseUiLoadActivity {
                 .setLayoutId(R.layout.adapter_list_item)
                 .setPresenter(adapterPresenter)
                 .build((holder, s) -> holder.setText(android.R.id.text1, s));
-        mRecyclerView.setAdapter(adapter);
-        mRecyclerView.setLayoutManager(new LinearLayoutManager(this));
-        mRecyclerView.addItemDecoration(new LinearDividerItemDecoration.Builder(this).build());
+        mActViewHolder.mRecyclerView.setAdapter(adapter);
+        mActViewHolder.mRecyclerView.setLayoutManager(new LinearLayoutManager(this));
+        mActViewHolder.mRecyclerView.addItemDecoration(new LinearDividerItemDecoration.Builder(this).build());
 
         adapter.setOnItemClickListener((viewGroup, view, s, integer) -> {
             selectIndex = integer;
@@ -228,9 +276,9 @@ public class MainActivity extends BaseUiLoadActivity {
 
     void setPlayImageState(int state) {
         if (state == STOPPED || state == PAUSED || state == ERROR)
-            playImgView.setImageResource(R.drawable.ic_play);
+            mActViewHolder.playImgView.setImageResource(R.drawable.ic_play);
         else if (state == PLAYED)
-            playImgView.setImageResource(R.drawable.ic_pause);
+            mActViewHolder.playImgView.setImageResource(R.drawable.ic_pause);
     }
 
     private void doPlayAction() {
@@ -268,11 +316,11 @@ public class MainActivity extends BaseUiLoadActivity {
 
                     NativeAudio.setPlayingUriAudioPlayer(true);
 
-                    musicSeekbar.setEnabled(true);
+                    mActViewHolder.musicSeekbar.setEnabled(true);
                     setPlayImageState(PLAYED);
 
                     String newUri = uri.substring(uri.lastIndexOf("/") + 1);
-                    infoText.setText(newUri);
+                    mActViewHolder.infoText.setText(newUri);
 
                     changePlayProgress();
                 }, Throwable::printStackTrace);
@@ -284,7 +332,7 @@ public class MainActivity extends BaseUiLoadActivity {
                 .flatMap(aLong -> Observable.fromCallable((Func0<Object[]>) () -> {
                     long duration = NativeAudio.getDutration();
                     long position = NativeAudio.getPostion();
-                    int progress = (int) ((double) position / duration * 10000);
+                    int progress = (int) ((double) position / duration * SEEKBAR_MAX);
                     return new Object[]{duration, position, progress};
                 }))//
                 .compose(RxUiUtils.applySchedulers())
@@ -292,11 +340,11 @@ public class MainActivity extends BaseUiLoadActivity {
 
                     int progress = (int) objs[2];
 
-                    if (progress >= 10000)
-                        progress = 10000;
+                    if (progress >= SEEKBAR_MAX)
+                        progress = SEEKBAR_MAX;
                     else if (progress < 0)
                         progress = 0;
-                    musicSeekbar.setProgress(progress);
+                    mActViewHolder.musicSeekbar.setProgress(progress);
 
                     setDurationForView((long) objs[0], (long) objs[1]);
 
@@ -308,9 +356,9 @@ public class MainActivity extends BaseUiLoadActivity {
 
     private void setDurationForView(long duration, long postion) {
         date.setTime(duration);
-        maxDurationTv.setText(format.format(date));
+        mActViewHolder.maxDurationTv.setText(format.format(date));
         date.setTime(postion);
-        playDurationTv.setText(format.format(date));
+        mActViewHolder.playDurationTv.setText(format.format(date));
     }
 
     private void selectAFileToPlay() {
@@ -340,6 +388,7 @@ public class MainActivity extends BaseUiLoadActivity {
                 initAudio();
             }
         } else if (grantResults.length == 1 && requestCode == 3) {
+            //noinspection StatementWithEmptyBody
             if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 //req code
             }

@@ -37,8 +37,7 @@
                 android:id="@+id/musicSeekbar"
                 android:layout_width="0dp"
                 android:layout_weight="1"
-                android:layout_height="wrap_content"
-                android:max="10000"/>
+                android:layout_height="wrap_content" />
 
         <TextView
                 android:id="@+id/maxDurationTv"

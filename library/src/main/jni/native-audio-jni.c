@@ -476,9 +476,7 @@ void Java_hello_leilei_nativeaudio_NativeAudio_setLoopingUriAudioPlayer(JNIEnv *
 
 }
 
-
 // expose the mute/solo APIs to Java for one of the 3 players
-
 static SLMuteSoloItf getMuteSolo() {
     if (uriPlayerMuteSolo != NULL)
         return uriPlayerMuteSolo;
@@ -912,4 +910,19 @@ jlong Java_hello_leilei_nativeaudio_NativeAudio_getPostion(
         }
     }
     return postion;
+}
+
+jboolean Java_hello_leilei_nativeaudio_NativeAudio_setPostion(
+        JNIEnv *env, jclass classz, jlong setPos) {
+    SLresult result;
+    if (NULL != uriPlayerSeek) {
+        SLmillisecond second = (SLmillisecond) setPos;
+        result = (*uriPlayerSeek)->SetPosition(uriPlayerSeek, second, SL_SEEKMODE_ACCURATE);
+        if (SL_RESULT_SUCCESS == result) {
+            return JNI_TRUE;
+        } else {
+            return JNI_FALSE;
+        }
+    }
+    return JNI_FALSE;
 }
