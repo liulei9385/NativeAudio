@@ -9,9 +9,4 @@
         android:title="扫描文件夹"
         app:showAsAction="never" />
 
-    <item
-        android:id="@+id/media_sel"
-        android:title="选择音乐"
-        app:showAsAction="never" />
-
 </menu>

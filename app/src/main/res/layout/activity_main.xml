@@ -21,11 +21,33 @@
             android:layout_height="0dp"
             android:layout_weight="1"/>
 
-    <SeekBar
-            android:id="@+id/musicSeekbar"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:max="10000"/>
+    <LinearLayout android:layout_width="match_parent"
+                  android:layout_height="wrap_content"
+                  android:orientation="horizontal"
+                  android:paddingLeft="5dp"
+                  android:paddingRight="5dp">
+
+        <TextView
+                android:id="@+id/playDurationTv"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/text_play_duration"/>
+
+        <SeekBar
+                android:id="@+id/musicSeekbar"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:max="10000"/>
+
+        <TextView
+                android:id="@+id/maxDurationTv"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/text_play_duration"/>
+
+    </LinearLayout>
+
 
     <include layout="@layout/layout_media_play"/>
 

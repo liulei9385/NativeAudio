@@ -18,37 +18,32 @@ package hello.leilei.nativeaudio;
 
 import android.content.res.AssetManager;
 
-public class NativeAudio {
+public class NativeAudioBak {
 
-    private static NativeAudio nativeAudio;
+    OnPlayOverListener playOverListener;
 
-    public static NativeAudio getInstance() {
+    public void doCallBack() {
+        System.out.println("NativeAudioBak.doCallBack");
+        if (playOverListener != null)
+            playOverListener.onPlayOver();
+    }
+
+    private static NativeAudioBak nativeAudio;
+
+    public static NativeAudioBak getInstance() {
         if (nativeAudio == null)
-            nativeAudio = new NativeAudio();
+            nativeAudio = new NativeAudioBak();
         return nativeAudio;
     }
 
-    public static interface OnPlayOverListener {
-        void onPlayOver();
-    }
-
-    private OnPlayOverListener playOverListener;
-
     public void setPlayOverListener(OnPlayOverListener playOverListener) {
         this.playOverListener = playOverListener;
-    }
-
-    public void doCallBack() {
-        if (playOverListener != null)
-            playOverListener.onPlayOver();
     }
 
     /**
      * Native methods, implemented in jni folder
      */
     public static native void createEngine();
-
-    public static native void createBufferQueueAudioPlayer(int sampleRate, int samplesPerBuf);
 
     public static native boolean createAssetAudioPlayer(AssetManager assetManager, String filename);
 
@@ -59,6 +54,13 @@ public class NativeAudio {
 
     public static native void setPlayingUriAudioPlayer(boolean isPlaying);
 
+    /**
+     * 0 stoped 1 play 2 pause -1 error
+     *
+     * @return above
+     */
+    public static native int getPlayingUriAudioPlayer();
+
     public static native void setLoopingUriAudioPlayer(boolean isLooping);
 
     public static native void setChannelMuteUriAudioPlayer(int chan, boolean mute);
@@ -66,6 +68,10 @@ public class NativeAudio {
     public static native void setChannelSoloUriAudioPlayer(int chan, boolean solo);
 
     public static native int getNumChannelsUriAudioPlayer();
+
+    public static native long getDutration();
+
+    public static native long getPostion();
 
     public static native void setVolumeUriAudioPlayer(int millibel);
 
@@ -81,22 +87,15 @@ public class NativeAudio {
 
     public static native void startRecording();
 
-    public static native long getDutration();
-
-    public static native long getPostion();
-
-    /**
-     * 0 stoped 1 play 2 pause -1 error
-     *
-     * @return above
-     */
-    public static native int getPlayingUriState();
-
     public static native void shutdown();
 
     /** Load jni .so on initialization */
     static {
         System.loadLibrary("native-audio-jni");
+    }
+
+    public interface OnPlayOverListener {
+        void onPlayOver();
     }
 
 }

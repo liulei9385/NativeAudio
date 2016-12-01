@@ -24,4 +24,5 @@
     <string name="text_input_pwd">输入密码</string>
     <string name="openDrawer">open drawer</string>
     <string name="closeDrawer">cloase drawer</string>
+    <string name="text_play_duration">00:00</string>
 </resources>
