@@ -17,6 +17,10 @@
 package hello.leilei.nativeaudio;
 
 import android.content.res.AssetManager;
+import android.support.annotation.NonNull;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class NativeAudio {
 
@@ -28,19 +32,32 @@ public class NativeAudio {
         return nativeAudio;
     }
 
-    public static interface OnPlayOverListener {
+    public interface OnPlayOverListener {
         void onPlayOver();
     }
 
-    private OnPlayOverListener playOverListener;
+    private List<OnPlayOverListener> playOverListeners;
 
-    public void setPlayOverListener(OnPlayOverListener playOverListener) {
-        this.playOverListener = playOverListener;
+    public void addPlayOverListener(@NonNull OnPlayOverListener playOverListener) {
+        if (this.playOverListeners == null)
+            this.playOverListeners = new ArrayList<>();
+        if (!this.playOverListeners.contains(playOverListener))
+            this.playOverListeners.add(playOverListener);
     }
 
+    public void removePlayOverListener(@NonNull OnPlayOverListener playOverListener) {
+        if (this.playOverListeners != null) {
+            this.playOverListeners.remove(playOverListener);
+        }
+    }
+
+
+    @SuppressWarnings("unused")
     public void doCallBack() {
-        if (playOverListener != null)
-            playOverListener.onPlayOver();
+        if (playOverListeners != null) {
+            for (OnPlayOverListener listener : playOverListeners)
+                listener.onPlayOver();
+        }
     }
 
     /**

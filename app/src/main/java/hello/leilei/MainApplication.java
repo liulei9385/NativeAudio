@@ -1,6 +1,7 @@
 package hello.leilei;
 
 import android.app.Application;
+
 import cn.bmob.v3.Bmob;
 import cn.bmob.v3.BmobConfig;
 import timber.log.Timber;
@@ -10,9 +11,17 @@ import timber.log.Timber;
  */
 public class MainApplication extends Application {
 
+    private static MainApplication app;
+
+    public static MainApplication getApp() {
+        return app;
+    }
+
     @Override
     public void onCreate() {
         super.onCreate();
+
+        app = this;
 
         if (BuildConfig.DEBUG) {
             Timber.plant(new Timber.DebugTree());

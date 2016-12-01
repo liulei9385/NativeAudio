@@ -89,6 +89,40 @@ public class MainActivity extends BaseUiLoadActivity {
         DrawerLayout mDrawerLayout;
         @BindView(R.id.naviView)
         NavigationView mNavigationView;
+
+        @OnClick({R.id.media_play, R.id.play_next, R.id.play_previous})
+        void onClick(View view) {
+            final int viewId = view.getId();
+            switch (viewId) {
+
+                case R.id.media_play:
+
+                    doPlayAction();
+
+                    break;
+
+                case R.id.play_next:
+
+                    if (selectIndex + 1 == adapterPresenter.getCount()) {
+                        selectIndex = 0;
+                        doPlayAction();
+                    } else {
+                        selectIndex += 1;
+                        doPlayAction();
+                    }
+
+                    break;
+
+                case R.id.play_previous:
+                    if (selectIndex == 0)
+                        doPlayAction();
+                    else {
+                        selectIndex -= 1;
+                        doPlayAction();
+                    }
+                    break;
+            }
+        }
     }
 
     public static final String RQ_AUDIO = Manifest.permission.RECORD_AUDIO;
@@ -193,7 +227,7 @@ public class MainActivity extends BaseUiLoadActivity {
             }
         });
 
-        mNativeAudio.setPlayOverListener(() -> {
+        mNativeAudio.addPlayOverListener(() -> {
             RxUiUtils.unsubscribe(changeProgressSubscri);
             RxUiUtils.postDelayedRxOnMain(10L, () -> showSToast("播放结束"));
         });
@@ -208,8 +242,23 @@ public class MainActivity extends BaseUiLoadActivity {
         mActViewHolder.mRecyclerView.addItemDecoration(new LinearDividerItemDecoration.Builder(this).build());
 
         adapter.setOnItemClickListener((viewGroup, view, s, integer) -> {
+
             selectIndex = integer;
             doPlayAction();
+
+            int index = s.lastIndexOf("/");
+            int end = s.lastIndexOf(".");
+            String songName = s.substring(index + 1, end);
+
+            index = songName.indexOf("-");
+            String showName = songName;
+            if (index >= 0 && songName.length() > (index + 2))
+                songName = songName.substring(index + 1);
+
+            songName = songName.trim();
+
+            PlayActivity.start(MainActivity.this, songName, showName);
+
         });
 
         getSearchFileObserable();
@@ -240,40 +289,6 @@ public class MainActivity extends BaseUiLoadActivity {
         }
     }
 
-    @OnClick({R.id.media_play, R.id.play_next, R.id.play_previous})
-    void onClick(View view) {
-        final int viewId = view.getId();
-        switch (viewId) {
-
-            case R.id.media_play:
-
-                doPlayAction();
-
-                break;
-
-            case R.id.play_next:
-
-                if (selectIndex + 1 == adapterPresenter.getCount()) {
-                    selectIndex = 0;
-                    doPlayAction();
-                } else {
-                    selectIndex += 1;
-                    doPlayAction();
-                }
-
-                break;
-
-            case R.id.play_previous:
-                if (selectIndex == 0)
-                    doPlayAction();
-                else {
-                    selectIndex -= 1;
-                    doPlayAction();
-                }
-                break;
-        }
-    }
-
     void setPlayImageState(int state) {
         if (state == STOPPED || state == PAUSED || state == ERROR)
             mActViewHolder.playImgView.setImageResource(R.drawable.ic_play);
@@ -285,6 +300,11 @@ public class MainActivity extends BaseUiLoadActivity {
         int state = NativeAudio.getPlayingUriState();
         //* 0 stoped 1 play 2 pause -1 error
         if (state == ERROR || state == STOPPED || cuttentPlayIndex != selectIndex) {
+
+            if (selectIndex == -1 && adapterPresenter.getCount() > 0) {
+                //默认选择第一首歌
+                selectIndex = 0;
+            }
 
             if (selectIndex < 0 || selectIndex > adapterPresenter.getCount()) {
                 setPlayImageState(state);

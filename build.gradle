@@ -61,6 +61,11 @@ ext {
     okhttpws = 'com.squareup.okhttp3:okhttp-ws:3.4.2'
     gson = 'com.google.code.gson:gson:2.8.0'
 
+    retrofitVersion = '2.1.0'
+    retrofit = 'com.squareup.retrofit2:retrofit:' + retrofitVersion
+    retrofit_convter_gson = 'com.squareup.retrofit2:converter-gson:' + retrofitVersion
+    retrofit_adapter_rx = 'com.squareup.retrofit2:adapter-rxjava:' + retrofitVersion
+
     rxbindingVersion = '0.4.0'
     rxbinding = 'com.jakewharton.rxbinding:rxbinding:' + rxbindingVersion
     rxbinding_support_v4 = 'com.jakewharton.rxbinding:rxbinding-support-v4:' + rxbindingVersion

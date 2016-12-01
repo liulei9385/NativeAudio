@@ -6,6 +6,7 @@
 package hello.leilei.base;
 
 import android.os.Bundle;
+import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.View;
@@ -20,11 +21,13 @@ public abstract class BaseActivity extends AppCompatActivity {
     protected boolean isPaused = false;
     protected boolean isResumed = false;
 
+    protected Toolbar mToolbar;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(getLayoutResource());
-        Toolbar mToolbar = ButterKnife.findById(this, R.id.mtoolbar);
+        mToolbar = ButterKnife.findById(this, R.id.mtoolbar);
         if (mToolbar != null) {
             setSupportActionBar(mToolbar);
         }
@@ -51,6 +54,15 @@ public abstract class BaseActivity extends AppCompatActivity {
         super.onDestroy();
         if (mToast != null)
             mToast.cancel();
+    }
+
+    public void setToolbarTitle(CharSequence title) {
+        ActionBar actionBar = getSupportActionBar();
+        if (actionBar != null) {
+            actionBar.setTitle(title);
+        } else if (mToolbar != null) {
+            mToolbar.setTitle(title);
+        } else setTitle(title);
     }
 
     private Toast mToast;

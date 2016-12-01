@@ -50,8 +50,14 @@ dependencies {
 
     // okhttp
     compile "${rootProject.ext.okhttp}"
+    compile "${rootProject.ext.okhttp_interceptor}"
     compile "${rootProject.ext.okio}"
     compile "${rootProject.ext.gson}"
+
+    //retrofit
+    compile "${rootProject.ext.retrofit}"
+    compile "${rootProject.ext.retrofit_convter_gson}"
+    compile "${rootProject.ext.retrofit_adapter_rx}"
 
     // butterknife
     apt "${rootProject.ext.butterknife_compiler}"

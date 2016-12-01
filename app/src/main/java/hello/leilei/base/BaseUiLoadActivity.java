@@ -1,5 +1,6 @@
 package hello.leilei.base;
 
+import android.content.Intent;
 import android.os.Bundle;
 
 /**
@@ -17,7 +18,7 @@ public abstract class BaseUiLoadActivity extends BaseActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        prepareData();
+        prepareData(getIntent());
         initView();
     }
 
@@ -35,7 +36,7 @@ public abstract class BaseUiLoadActivity extends BaseActivity {
 
     protected abstract void obtainData();
 
-    public void prepareData() {
+    public void prepareData(Intent mIntent) {
     }
 
     public void initView() {

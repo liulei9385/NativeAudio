@@ -53,6 +53,17 @@ public class CollectionUtils {
     }
 
     /**
+     * 集合是否为空
+     *
+     * @param tList
+     * @param <T>
+     * @return
+     */
+    public static <T> boolean isNotEmpty(List<T> tList) {
+        return !isEmpty(tList);
+    }
+
+    /**
      * join collection to string, separator is {@link #DEFAULT_JOIN_SEPARATOR}
      * <p/>
      * <pre>
