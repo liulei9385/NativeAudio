@@ -1,10 +1,10 @@
 package hello.leilei;
 
 import android.Manifest;
-import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.drawable.BitmapDrawable;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
@@ -20,34 +20,27 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.ImageView;
-import android.widget.SeekBar;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 
-import java.io.File;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.List;
-import java.util.Locale;
-import java.util.concurrent.TimeUnit;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
 import cn.bmob.v3.BmobUser;
 import hello.leilei.base.BaseUiLoadActivity;
+import hello.leilei.base.audioplayer.IPlayerCallback;
+import hello.leilei.base.audioplayer.NativePlayer;
 import hello.leilei.base.decoration.LinearDividerItemDecoration;
 import hello.leilei.base.ui.adapter.AdapterPresenter;
 import hello.leilei.base.ui.adapter.MvpRecyclerAdapter;
-import hello.leilei.nativeaudio.FileFind;
-import hello.leilei.nativeaudio.NativeAudio;
+import hello.leilei.lyric.LyricPresenter;
+import hello.leilei.model.FileMetaData;
 import hello.leilei.utils.CollectionUtils;
-import hello.leilei.utils.FileUtils;
+import hello.leilei.utils.DensityUtils;
 import hello.leilei.utils.RxUiUtils;
-import rx.Observable;
 import rx.Subscription;
-import rx.functions.Func0;
-import rx.observables.ConnectableObservable;
-import timber.log.Timber;
 
 /**
  * Created by liulei on 16-3-18.
@@ -56,31 +49,28 @@ import timber.log.Timber;
  */
 public class MainActivity extends BaseUiLoadActivity {
 
-    public static final int STOPPED = 0;
-    public static final int PLAYED = 1;
-    public static final int PAUSED = 2;
-    public static final int ERROR = -1;
-
-    public static final int SEEKBAR_MAX = 1000;
     private ActViewHolder mActViewHolder;
 
+    AdapterPresenter<FileMetaData> adapterPresenter;
+    LyricPresenter mLyricPresenter;
+    NativePlayer mNativePlayer;
+
+    public static final String RQ_AUDIO = Manifest.permission.RECORD_AUDIO;
+    private Subscription seachFileSubscri;
+
     class ActViewHolder {
-        @BindView(R.id.media_play)
-        ImageView playImgView;
-        @BindView(R.id.play_next)
-        ImageView nextImgView;
-        @BindView(R.id.play_previous)
-        ImageView previousImgView;
 
-        @BindView(R.id.musicSeekbar)
-        SeekBar musicSeekbar;
-        @BindView(R.id.infoText)
-        TextView infoText;
+        @BindView(R.id.playNextIv)
+        ImageView playNextIv;
+        @BindView(R.id.playIv)
+        ImageView playIv;
 
-        @BindView(R.id.playDurationTv)
-        TextView playDurationTv;
-        @BindView(R.id.maxDurationTv)
-        TextView maxDurationTv;
+        @BindView(R.id.titleTv)
+        TextView titleTv;
+        @BindView(R.id.albumTv)
+        TextView albumTv;
+        @BindView(R.id.albumIv)
+        ImageView albumIv;
 
         @BindView(R.id.recyclerView)
         RecyclerView mRecyclerView;
@@ -90,54 +80,39 @@ public class MainActivity extends BaseUiLoadActivity {
         @BindView(R.id.naviView)
         NavigationView mNavigationView;
 
-        @OnClick({R.id.media_play, R.id.play_next, R.id.play_previous})
+        @BindView(R.id.progressV)
+        ProgressBar mProgressBar;
+
+        @OnClick({R.id.playNextIv, R.id.playIv, R.id.bottomRL})
         void onClick(View view) {
             final int viewId = view.getId();
             switch (viewId) {
 
-                case R.id.media_play:
+                case R.id.playIv:
 
-                    doPlayAction();
-
-                    break;
-
-                case R.id.play_next:
-
-                    if (selectIndex + 1 == adapterPresenter.getCount()) {
-                        selectIndex = 0;
-                        doPlayAction();
-                    } else {
-                        selectIndex += 1;
-                        doPlayAction();
-                    }
+                    mNativePlayer.playMusic(0);
 
                     break;
 
-                case R.id.play_previous:
-                    if (selectIndex == 0)
-                        doPlayAction();
-                    else {
-                        selectIndex -= 1;
-                        doPlayAction();
+                case R.id.playNextIv:
+
+                    mNativePlayer.playerNext();
+
+                    break;
+
+                case R.id.bottomRL:
+
+                    int currentIndex = mNativePlayer.getCuttentPlayIndex();
+                    if (currentIndex >= 0) {
+                        FileMetaData fileMetaData = mNativePlayer.getMetaData(currentIndex);
+                        if (fileMetaData == null) return;
+                        PlayActivity.start(MainActivity.this, fileMetaData.title,
+                                fileMetaData.title + "-" + fileMetaData.album);
                     }
                     break;
             }
         }
     }
-
-    public static final String RQ_AUDIO = Manifest.permission.RECORD_AUDIO;
-    //局部变量数据
-    private List<String> mp3FileList;//文件列表
-    private int selectIndex = -1;
-    private int cuttentPlayIndex = -1;
-    //native-audio
-    private NativeAudio mNativeAudio;
-
-    private ConnectableObservable<Void> searchFileObser;
-    private Subscription seachFileSubscri;
-    private Subscription changeProgressSubscri;
-
-    private AdapterPresenter<String> adapterPresenter;
 
     public static void start(Context context) {
         Intent starter = new Intent(context, MainActivity.class);
@@ -145,7 +120,6 @@ public class MainActivity extends BaseUiLoadActivity {
         context.startActivity(starter);
     }
 
-    @SuppressLint("HandlerLeak")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -176,99 +150,61 @@ public class MainActivity extends BaseUiLoadActivity {
             return false;
         });
 
-        mNativeAudio = NativeAudio.getInstance();
+        mNativePlayer = NativePlayer.getInstance();
+        mLyricPresenter = mNativePlayer.getLyricPresenter();
     }
 
     @Override
     public void configUi() {
 
-        //for seekbar
-        mActViewHolder.musicSeekbar.setProgress(0);
-        mActViewHolder.musicSeekbar.setMax(SEEKBAR_MAX);
-        mActViewHolder.musicSeekbar.setEnabled(false);
-
-
-        mActViewHolder.musicSeekbar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-
-            boolean fromUser;
-            int sysProgress;
-            int userProgress;
-
-            @Override
-            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                this.fromUser = fromUser;
-                if (this.fromUser)
-                    this.userProgress = progress;
-                else this.sysProgress = progress;
-            }
-
-            @Override
-            public void onStartTrackingTouch(SeekBar seekBar) {
-            }
-
-            @Override
-            public void onStopTrackingTouch(SeekBar seekBar) {
-                if (!fromUser) return;
-                RxUiUtils.postDelayedOnBg(20L, () -> {
-
-                    RxUiUtils.unsubscribe(changeProgressSubscri);
-
-                    long dutration = NativeAudio.getDutration();
-                    if (dutration <= 0) return;
-
-                    long milisecond = (long) (dutration * (userProgress / (float) seekBar.getMax()));
-                    boolean success = NativeAudio.setPostion(milisecond);
-                    if (success) {
-                        Timber.d("NativeAudio.setPostion " + milisecond + "success");
-                    }
-                    changePlayProgress();
-
-                });
-            }
-        });
-
-        mNativeAudio.addPlayOverListener(() -> {
-            RxUiUtils.unsubscribe(changeProgressSubscri);
-            RxUiUtils.postDelayedRxOnMain(10L, () -> showSToast("播放结束"));
-        });
-
         adapterPresenter = new AdapterPresenter<>();
-        MvpRecyclerAdapter<String> adapter = new MvpRecyclerAdapter.Builder<String>()
+        MvpRecyclerAdapter<FileMetaData> adapter = new MvpRecyclerAdapter.Builder<FileMetaData>()
                 .setLayoutId(R.layout.adapter_list_item)
                 .setPresenter(adapterPresenter)
-                .build((holder, s) -> holder.setText(android.R.id.text1, s));
+                .build((holder, fileMetaData) -> {
+
+                    holder.setText(R.id.titleTv, fileMetaData.title);
+                    holder.setText(R.id.albumTv, fileMetaData.album);
+                    holder.setText(R.id.playIndexTv, String.valueOf(holder.getAdapterPosition() + 1));
+
+                });
         mActViewHolder.mRecyclerView.setAdapter(adapter);
         mActViewHolder.mRecyclerView.setLayoutManager(new LinearLayoutManager(this));
-        mActViewHolder.mRecyclerView.addItemDecoration(new LinearDividerItemDecoration.Builder(this).build());
+        mActViewHolder.mRecyclerView.addItemDecoration(new LinearDividerItemDecoration.Builder(this)
+                .margin(0, 0, DensityUtils.dp2px(MainActivity.this, 45.0f), 0)
+                .build());
 
-        adapter.setOnItemClickListener((viewGroup, view, s, integer) -> {
+        adapter.setOnItemClickListener((viewGroup, view, fileMetaData, integer) -> {
 
-            selectIndex = integer;
-            doPlayAction();
-
-            int index = s.lastIndexOf("/");
-            int end = s.lastIndexOf(".");
-            String songName = s.substring(index + 1, end);
-
-            index = songName.indexOf("-");
-            String showName = songName;
-            if (index >= 0 && songName.length() > (index + 2))
-                songName = songName.substring(index + 1);
-
-            songName = songName.trim();
-
-            PlayActivity.start(MainActivity.this, songName, showName);
+            mNativePlayer.playMusic(integer);
+            setPlayUiWithData(fileMetaData);
 
         });
 
-        getSearchFileObserable();
-        searchFileObser.subscribe(aVoid -> adapterPresenter.addAllItem(mp3FileList),
-                Throwable::printStackTrace);
-
-        searchFileObser.connect();
-        searchFileObser.refCount();
-
+        List<FileMetaData> metaDatas = mNativePlayer.getFileMetaDatas();
+        mNativePlayer.addPlayerCallback(playerCallback);
+        if (!CollectionUtils.isEmpty(metaDatas))
+            adapterPresenter.addAllItem(mNativePlayer.getFileMetaDatas());
     }
+
+    IPlayerCallback playerCallback = new IPlayerCallback() {
+        @Override
+        public void onPlayState(int state) {
+            setPlayImageState(state);
+        }
+
+        @Override
+        public void onProgressChanged(NativePlayer.ProgressItem mProgressItem) {
+            mActViewHolder.mProgressBar.setProgress((int) (mProgressItem.percent * 100));
+        }
+
+        @Override
+        public void onLoadResourceComplete() {
+            if (adapterPresenter.getCount() > 0)
+                adapterPresenter.clear();
+            adapterPresenter.addAllItem(mNativePlayer.getFileMetaDatas());
+        }
+    };
 
     @Override
     protected void obtainData() {
@@ -277,7 +213,7 @@ public class MainActivity extends BaseUiLoadActivity {
         if (gratId != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this, new String[]{RQ_AUDIO}, 2);
         } else
-            initAudio();
+            NativePlayer.getInstance().initAudio();
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
             gratId = ActivityCompat.checkSelfPermission(this,
@@ -289,113 +225,24 @@ public class MainActivity extends BaseUiLoadActivity {
         }
     }
 
+    private void setPlayUiWithData(FileMetaData metaData) {
+
+        mActViewHolder.titleTv.setText(metaData.title);
+        mActViewHolder.albumTv.setText(metaData.album);
+
+        metaData.getBitmapObservable()
+                .subscribe(bitmap -> {
+                    BitmapDrawable bitmapDrawable =
+                            new BitmapDrawable(getResources(), bitmap);
+                    mActViewHolder.albumIv.setImageDrawable(bitmapDrawable);
+                }, Throwable::printStackTrace);
+    }
+
     void setPlayImageState(int state) {
-        if (state == STOPPED || state == PAUSED || state == ERROR)
-            mActViewHolder.playImgView.setImageResource(R.drawable.ic_play);
-        else if (state == PLAYED)
-            mActViewHolder.playImgView.setImageResource(R.drawable.ic_pause);
-    }
-
-    private void doPlayAction() {
-        int state = NativeAudio.getPlayingUriState();
-        //* 0 stoped 1 play 2 pause -1 error
-        if (state == ERROR || state == STOPPED || cuttentPlayIndex != selectIndex) {
-
-            if (selectIndex == -1 && adapterPresenter.getCount() > 0) {
-                //默认选择第一首歌
-                selectIndex = 0;
-            }
-
-            if (selectIndex < 0 || selectIndex > adapterPresenter.getCount()) {
-                setPlayImageState(state);
-                return;
-            }
-
-            if (state == PLAYED) {
-                NativeAudio.setPlayingUriAudioPlayer(false);
-            }
-            selectAFileToPlay();
-        } else {
-            if (state == PLAYED) {
-                NativeAudio.setPlayingUriAudioPlayer(false);
-                setPlayImageState(PAUSED);
-            } else if (state == PAUSED) {
-                NativeAudio.setPlayingUriAudioPlayer(true);
-                setPlayImageState(PLAYED);
-            }
-        }
-    }
-
-    private void playMp3Music(String uri) {
-        // 在后台线程中创建相关资源
-        Observable.fromCallable((Func0<Boolean>) () -> {
-            NativeAudio.setPlayingUriAudioPlayer(false);
-            return NativeAudio.createUriAudioPlayer(uri);
-        }).compose(RxUiUtils.applySchedulers())
-                .subscribe(isSuccess -> {
-
-                    NativeAudio.setPlayingUriAudioPlayer(true);
-
-                    mActViewHolder.musicSeekbar.setEnabled(true);
-                    setPlayImageState(PLAYED);
-
-                    String newUri = uri.substring(uri.lastIndexOf("/") + 1);
-                    mActViewHolder.infoText.setText(newUri);
-
-                    changePlayProgress();
-                }, Throwable::printStackTrace);
-    }
-
-    private void changePlayProgress() {
-        RxUiUtils.unsubscribe(changeProgressSubscri);
-        changeProgressSubscri = Observable.interval(0L, 1000L, TimeUnit.MICROSECONDS)
-                .flatMap(aLong -> Observable.fromCallable((Func0<Object[]>) () -> {
-                    long duration = NativeAudio.getDutration();
-                    long position = NativeAudio.getPostion();
-                    int progress = (int) ((double) position / duration * SEEKBAR_MAX);
-                    return new Object[]{duration, position, progress};
-                }))//
-                .compose(RxUiUtils.applySchedulers())
-                .subscribe(objs -> {
-
-                    int progress = (int) objs[2];
-
-                    if (progress >= SEEKBAR_MAX)
-                        progress = SEEKBAR_MAX;
-                    else if (progress < 0)
-                        progress = 0;
-                    mActViewHolder.musicSeekbar.setProgress(progress);
-
-                    setDurationForView((long) objs[0], (long) objs[1]);
-
-                }, Throwable::printStackTrace);
-    }
-
-    private SimpleDateFormat format = new SimpleDateFormat("mm:ss", Locale.getDefault());
-    private Date date = new Date();
-
-    private void setDurationForView(long duration, long postion) {
-        date.setTime(duration);
-        mActViewHolder.maxDurationTv.setText(format.format(date));
-        date.setTime(postion);
-        mActViewHolder.playDurationTv.setText(format.format(date));
-    }
-
-    private void selectAFileToPlay() {
-        if (!CollectionUtils.isEmpty(mp3FileList)) {
-            if (selectIndex >= 0 && selectIndex < mp3FileList.size()) {
-                String mp3Path = mp3FileList.get(selectIndex);
-                playMp3Music(mp3Path);
-                cuttentPlayIndex = selectIndex;
-                return;
-            }
-        }
-        showSToast("请选择要播放的音乐文件");
-    }
-
-    private void initAudio() {
-        // initialize native audio system
-        NativeAudio.createEngine();
+        if (state == NativePlayer.STOPPED || state == NativePlayer.PAUSED || state == NativePlayer.ERROR)
+            mActViewHolder.playIv.setImageResource(R.drawable.playbar_btn_play);
+        else if (state == NativePlayer.PLAYED)
+            mActViewHolder.playIv.setImageResource(R.drawable.playbar_btn_pause);
     }
 
     @Override
@@ -405,7 +252,7 @@ public class MainActivity extends BaseUiLoadActivity {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         if (grantResults.length == 1 && requestCode == 2) {
             if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                initAudio();
+                NativePlayer.getInstance().initAudio();
             }
         } else if (grantResults.length == 1 && requestCode == 3) {
             //noinspection StatementWithEmptyBody
@@ -424,21 +271,12 @@ public class MainActivity extends BaseUiLoadActivity {
     private void startToScanMusic() {
         //不用每次搜索,浪费资源
         RxUiUtils.unsubscribe(seachFileSubscri);
-        seachFileSubscri = searchFileObser.subscribe(a -> RxUiUtils.postDelayedRxOnMain(10L, () -> {
-            int size = mp3FileList != null ? mp3FileList.size() : 0;
-            showSToast("扫描到" + size + "个文件");
-        }), Throwable::printStackTrace);
-    }
-
-    private void getSearchFileObserable() {
-        searchFileObser = Observable.fromCallable((Func0<Void>) () -> {
-            File sdDir = FileUtils.getExternalSdDir(MainActivity.this);
-            if (sdDir != null)
-                mp3FileList = FileFind.getMp3FileFromPath(sdDir.getPath());
-            return null;
-        })//
-                .compose(RxUiUtils.applySchedulers())
-                .publish();
+        seachFileSubscri = mNativePlayer.getSearchFileObserable()
+                .subscribe(mp3FileList ->
+                        RxUiUtils.postDelayedRxOnMain(10L, () -> {
+                            int size = mp3FileList != null ? mp3FileList.size() : 0;
+                            showSToast("扫描到" + size + "个文件");
+                        }), Throwable::printStackTrace);
     }
 
     @Override
@@ -447,7 +285,6 @@ public class MainActivity extends BaseUiLoadActivity {
         switch (itemId) {
             case R.id.media_scan:
                 startToScanMusic();
-                searchFileObser.connect();
                 return true;
         }
         return super.onOptionsItemSelected(item);
@@ -461,6 +298,8 @@ public class MainActivity extends BaseUiLoadActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        NativeAudio.shutdown();
+        mNativePlayer.removePlayerCallback(playerCallback);
+        NativePlayer.getInstance().shutDown();
     }
+
 }

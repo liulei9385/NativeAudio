@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/bottomRL"
+    android:layout_width="match_parent"
+    android:layout_height="56dp"
+    android:background="@android:color/white">
+
+    <ImageView
+        android:id="@+id/albumIv"
+        android:layout_width="45dp"
+        android:layout_height="45dp"
+        android:layout_centerVertical="true"
+        android:layout_marginLeft="5dp"
+        android:layout_marginStart="5dp"
+        android:contentDescription="@null"
+        android:scaleType="centerInside"
+        tools:src="@mipmap/ic_launcher" />
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerVertical="true"
+        android:layout_toEndOf="@+id/albumIv"
+        android:layout_toRightOf="@+id/albumIv"
+        android:orientation="vertical"
+        android:paddingLeft="10dp"
+        android:paddingStart="10dp"
+        tools:ignore="RelativeOverlap,RtlSymmetry">
+
+        <TextView
+            android:id="@+id/titleTv"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="@color/titleTextColor"
+            android:textSize="16sp"
+            tools:text="Sky" />
+
+        <TextView
+            android:id="@+id/albumTv"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="5dp"
+            android:background="?selectableItemBackground"
+            android:textColor="@color/subTitleTextColor"
+            android:textSize="14sp"
+            tools:text="Vertial Sky" />
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:layout_alignParentEnd="true"
+        android:layout_alignParentRight="true"
+        android:orientation="horizontal">
+
+        <ImageView
+            android:id="@+id/playIv"
+            android:layout_width="48dp"
+            android:layout_height="wrap_content"
+            android:contentDescription="@null"
+            android:scaleType="centerInside"
+            android:src="@drawable/playbar_btn_play" />
+
+        <ImageView
+            android:id="@+id/playNextIv"
+            android:layout_width="48dp"
+            android:layout_height="wrap_content"
+            android:contentDescription="@null"
+            android:scaleType="centerInside"
+            android:src="@drawable/playbar_btn_next" />
+
+    </LinearLayout>
+
+    <ProgressBar
+        android:id="@+id/progressV"
+        style="?android:attr/progressBarStyleHorizontal"
+        android:layout_width="match_parent"
+        android:layout_height="4dp"
+        android:layout_alignParentBottom="true"
+        android:max="100"
+        android:progressDrawable="@drawable/horizontal_progressbar"
+        tools:progress="85" />
+
+</RelativeLayout>

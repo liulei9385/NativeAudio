@@ -63,15 +63,17 @@ int scan_dir(char *path, char *format, char **source, int depth) {
                     || (buf.st_mode & S_IROTH)) {
                     if (format != NULL && source != NULL) {
                         char *last = malloc(4 * sizeof(char));
-                        int fileLen = strlen(file->d_name);
+                        int fileLen = (int) strlen(file->d_name);
                         if (fileLen >= 4) {
                             //"a.mp3" ".mp3"
                             strncpy(last, (file->d_name) + (fileLen - 4), 4);
                             last[4] = '\0';
+                            // format 是否是 last 的子串
                             if (strstr(last, format)) {
+                                //LOGD("search the music is %s %s", last, file->d_name);
                                 if (len < 256) {
                                     sprintf(childpath, "%s/%s", path, file->d_name);
-                                    int max = fileLen + 1 + strlen(path);
+                                    int max = (int) (fileLen + 1 + strlen(path));
                                     childpath[max] = '\0';
                                     char *temp = malloc(max * sizeof(char));
                                     strcpy(temp, childpath);

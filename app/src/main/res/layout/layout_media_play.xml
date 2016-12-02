@@ -3,7 +3,6 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:background="#802d25a6"
     android:gravity="center_horizontal"
     android:orientation="horizontal"
     tools:ignore="ContentDescription">
@@ -12,7 +11,7 @@
         android:id="@+id/play_next"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:background="@drawable/ic_backward" />
+        android:background="@drawable/ic_forward" />
 
     <ImageView
         android:id="@+id/media_play"
@@ -26,6 +25,6 @@
         android:id="@+id/play_previous"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:background="@drawable/ic_forward" />
+        android:background="@drawable/ic_backward" />
 
 </LinearLayout>

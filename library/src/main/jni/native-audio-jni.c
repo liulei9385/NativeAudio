@@ -128,7 +128,6 @@ jint JNI_OnLoad(JavaVM *vm, void *reserved) {
         LOGE("Failed to get the environment using GetEnv()");
         return -1;
     }
-    //initClassHelper(env, kYouDAApiPath, &gYouDaApiObj);
     getNativeAudioObj(env);
     return JNI_VERSION_1_6;
 }

@@ -27,8 +27,12 @@ public class NativeAudio {
     private static NativeAudio nativeAudio;
 
     public static NativeAudio getInstance() {
-        if (nativeAudio == null)
-            nativeAudio = new NativeAudio();
+        if (nativeAudio == null) {
+            synchronized (NativeAudio.class) {
+                if (nativeAudio == null)
+                    nativeAudio = new NativeAudio();
+            }
+        }
         return nativeAudio;
     }
 
