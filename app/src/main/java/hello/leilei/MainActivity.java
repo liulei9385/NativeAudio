@@ -165,7 +165,17 @@ public class MainActivity extends BaseUiLoadActivity {
 
                     holder.setText(R.id.titleTv, fileMetaData.title);
                     holder.setText(R.id.albumTv, fileMetaData.album);
-                    holder.setText(R.id.playIndexTv, String.valueOf(holder.getAdapterPosition() + 1));
+
+                    int pos = holder.getAdapterPosition();
+                    holder.setText(R.id.playIndexTv, String.valueOf(pos + 1));
+
+                    if (mNativePlayer.getCuttentPlayIndex() == pos) {
+                        holder.setVisible(R.id.icPlayerOnIv, true);
+                        holder.setVisible(R.id.playIndexTv, false);
+                    } else {
+                        holder.setVisible(R.id.icPlayerOnIv, false);
+                        holder.setVisible(R.id.playIndexTv, true);
+                    }
 
                 });
         mActViewHolder.mRecyclerView.setAdapter(adapter);
@@ -178,6 +188,7 @@ public class MainActivity extends BaseUiLoadActivity {
 
             mNativePlayer.playMusic(integer);
             setPlayUiWithData(fileMetaData);
+            adapter.notifyDataSetChanged();
 
         });
 
@@ -187,6 +198,8 @@ public class MainActivity extends BaseUiLoadActivity {
             adapterPresenter.addAllItem(mNativePlayer.getFileMetaDatas());
             setPlayUiWithData(metaDatas.get(0));
         }
+
+        mActViewHolder.mProgressBar.setMax(NativePlayer.SEEKBAR_MAX);
     }
 
     IPlayerCallback playerCallback = new IPlayerCallback() {
@@ -197,7 +210,7 @@ public class MainActivity extends BaseUiLoadActivity {
 
         @Override
         public void onProgressChanged(NativePlayer.ProgressItem mProgressItem) {
-            mActViewHolder.mProgressBar.setProgress((int) (mProgressItem.percent * 100));
+            mActViewHolder.mProgressBar.setProgress((int) (mProgressItem.percent * NativePlayer.SEEKBAR_MAX));
         }
 
         @Override

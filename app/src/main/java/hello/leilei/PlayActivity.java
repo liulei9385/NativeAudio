@@ -39,7 +39,6 @@ public class PlayActivity extends BaseUiLoadActivity {
 
     private static final String KEY_SONNAME = "songName";
     private static final String KEY_SHOWNAME = "showName";
-    public static final int SEEKBAR_MAX = 1000;
 
     @BindView(R.id.lyricV)
     LyricView lyricV;
@@ -94,7 +93,7 @@ public class PlayActivity extends BaseUiLoadActivity {
             setToolbarTitle(title);
 
         musicSeekbar.setProgress(0);
-        musicSeekbar.setMax(SEEKBAR_MAX);
+        musicSeekbar.setMax(NativePlayer.SEEKBAR_MAX);
         musicSeekbar.setEnabled(false);
 
         mNativePlayer.addPlayerCallback(callback);
@@ -136,7 +135,7 @@ public class PlayActivity extends BaseUiLoadActivity {
 
         @Override
         public void onProgressChanged(NativePlayer.ProgressItem progressItem) {
-            musicSeekbar.setProgress((int) (progressItem.percent * SEEKBAR_MAX));
+            musicSeekbar.setProgress((int) (progressItem.percent * NativePlayer.SEEKBAR_MAX));
             setDurationForView(progressItem.duration, progressItem.position);
         }
 

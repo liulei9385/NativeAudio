@@ -29,6 +29,8 @@ public class NativePlayer {
 
     private static NativePlayer player;
 
+    public static final int SEEKBAR_MAX = 1000;
+
     public static final int STOPPED = 0;
     public static final int PLAYED = 1;
     public static final int PAUSED = 2;
@@ -175,11 +177,11 @@ public class NativePlayer {
         if (selectIndex >= 0 && selectIndex < count) {
 
             FileMetaData metaData = getMetaData(selectIndex);
-            if (metaData == null || TextUtils.isEmpty(metaData.uri)) {
+            if (metaData == null || TextUtils.isEmpty(metaData.getUri())) {
                 //showSToast("歌曲文件错误");
                 return;
             }
-            playMp3Music(metaData.uri);
+            playMp3Music(metaData.getUri());
             cuttentPlayIndex = selectIndex;
         }
     }

@@ -1,21 +1,24 @@
 package hello.leilei.model;
 
 import cn.bmob.v3.BmobObject;
+import cn.bmob.v3.datatype.BmobFile;
 
 import java.io.File;
 
 /**
- * Created by liulei on 2016/11/30.
+ * Created by liulei
+ * DATE: 2016/11/30
+ * TIME: 15:43
  */
 public class SplashImgBean extends BmobObject {
 
-    private File imgData;
+    private BmobFile imgData;
 
-    public File getImgData() {
+    public BmobFile getImgData() {
         return imgData;
     }
 
-    public void setImgData(File imgData) {
+    public void setImgData(BmobFile imgData) {
         this.imgData = imgData;
     }
 }

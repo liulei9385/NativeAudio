@@ -126,6 +126,7 @@ public class LyricPresenter {
             List<FileMetaData> fileMetaDatas = new ArrayList<>();
             //noinspection Convert2streamapi
             for (String uri : fileUris) {
+                if (TextUtils.isEmpty(uri) || !uri.endsWith(".mp3")) continue;
                 FileMetaData metaData = getMetaDataForFile(metaRetriver, uri);
                 if (metaData != null)
                     fileMetaDatas.add(metaData);
@@ -151,7 +152,7 @@ public class LyricPresenter {
 
             FileMetaData metaData = new FileMetaData();
 
-            metaData.uri = fileUri;
+            metaData.setUri(fileUri);
 
             metaData.art = metaRetriver.getEmbeddedPicture();
             metaData.author = metaRetriver.extractMetadata(MediaMetadataRetriever.METADATA_KEY_AUTHOR);

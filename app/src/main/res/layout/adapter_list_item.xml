@@ -8,21 +8,38 @@
     android:orientation="vertical"
     tools:background="#4000ff00">
 
-    <TextView
-        android:id="@+id/playIndexTv"
+    <FrameLayout
+        android:id="@+id/playFL"
         android:layout_width="45dp"
-        android:layout_height="match_parent"
-        android:gravity="center"
-        android:textColor="@color/subTitleTextColor"
-        android:textSize="16sp"
-        tools:text="1" />
+        android:layout_height="match_parent">
+
+        <TextView
+            android:id="@+id/playIndexTv"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_gravity="center"
+            android:gravity="center_vertical"
+            android:textColor="@color/subTitleTextColor"
+            android:textSize="16sp"
+            tools:text="1" />
+
+        <ImageView
+            android:id="@+id/icPlayerOnIv"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:contentDescription="@null"
+            android:src="@drawable/ic_playon"
+            android:visibility="gone" />
+
+    </FrameLayout>
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_centerVertical="true"
-        android:layout_toEndOf="@+id/playIndexTv"
-        android:layout_toRightOf="@+id/playIndexTv"
+        android:layout_toEndOf="@+id/playFL"
+        android:layout_toRightOf="@+id/playFL"
         android:orientation="vertical">
 
         <TextView
