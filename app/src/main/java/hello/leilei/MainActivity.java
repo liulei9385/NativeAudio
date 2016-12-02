@@ -183,8 +183,10 @@ public class MainActivity extends BaseUiLoadActivity {
 
         List<FileMetaData> metaDatas = mNativePlayer.getFileMetaDatas();
         mNativePlayer.addPlayerCallback(playerCallback);
-        if (!CollectionUtils.isEmpty(metaDatas))
+        if (!CollectionUtils.isEmpty(metaDatas)) {
             adapterPresenter.addAllItem(mNativePlayer.getFileMetaDatas());
+            setPlayUiWithData(metaDatas.get(0));
+        }
     }
 
     IPlayerCallback playerCallback = new IPlayerCallback() {
@@ -203,6 +205,7 @@ public class MainActivity extends BaseUiLoadActivity {
             if (adapterPresenter.getCount() > 0)
                 adapterPresenter.clear();
             adapterPresenter.addAllItem(mNativePlayer.getFileMetaDatas());
+            setPlayUiWithData(adapterPresenter.getItem(0));
         }
     };
 
