@@ -1,20 +1,28 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/base_bg"
     android:orientation="vertical">
 
+    <include layout="@layout/toolbar" />
+
     <hello.leilei.lyric.LyricView
         android:id="@+id/lyricV"
         android:layout_width="match_parent"
-        android:layout_height="420dp"
-        android:layout_gravity="center" />
+        android:layout_height="match_parent"
+        android:layout_above="@+id/seekbarLL"
+        android:layout_below="@+id/mtoolbar"
+        android:layout_gravity="center"
+        tools:ignore="UnknownIdInLayout" />
 
     <LinearLayout
+        android:id="@+id/seekbarLL"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_above="@+id/bottomFL"
+        android:gravity="center_vertical"
         android:orientation="horizontal"
         android:paddingLeft="5dp"
         android:paddingRight="5dp">

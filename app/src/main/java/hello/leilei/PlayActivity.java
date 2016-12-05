@@ -92,12 +92,11 @@ public class PlayActivity extends BaseUiLoadActivity {
     @Override
     protected void configUi() {
 
-        if (!TextUtils.isEmpty(title))
-            setToolbarTitle(title);
+        if (!TextUtils.isEmpty(songName))
+            setToolbarTitle(songName);
 
         musicSeekbar.setProgress(0);
         musicSeekbar.setMax(NativePlayer.SEEKBAR_MAX);
-        musicSeekbar.setEnabled(false);
 
         mNativePlayer.addPlayerCallback(callback);
 
@@ -130,9 +129,9 @@ public class PlayActivity extends BaseUiLoadActivity {
         public void onPlayState(int state) {
 
             if (state == NativePlayer.STOPPED || state == NativePlayer.PAUSED || state == NativePlayer.ERROR)
-                playImgView.setImageResource(R.drawable.playbar_btn_play);
+                playImgView.setImageResource(R.drawable.ic_play);
             else if (state == NativePlayer.PLAYED)
-                playImgView.setImageResource(R.drawable.playbar_btn_pause);
+                playImgView.setImageResource(R.drawable.ic_pause);
 
         }
 

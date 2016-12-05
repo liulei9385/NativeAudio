@@ -7,7 +7,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import hello.leilei.MainApplication;
 import hello.leilei.lyric.LyricPresenter;
 import hello.leilei.model.FileMetaData;
 import hello.leilei.nativeaudio.FileFind;
@@ -87,6 +86,10 @@ public class NativePlayer {
 
     private NativePlayer() {
         mLyricPresenter = new LyricPresenter();
+        NativeAudio.getInstance().addPlayOverListener(() -> {
+            if (isResouceLoadComplete())
+                playerNext();
+        });
     }
 
     public void initAudio() {
@@ -95,6 +98,10 @@ public class NativePlayer {
             NativeAudio.createEngine();
             isInitEngine = true;
         }
+    }
+
+    public boolean isResouceLoadComplete() {
+        return CollectionUtils.isNotEmpty(fileMetaDatas);
     }
 
     public List<String> getMp3FileList() {
@@ -116,9 +123,12 @@ public class NativePlayer {
     }
 
     public void playerNext() {
-        if (selectIndex + 1 < getCount())
+
+        if (selectIndex + 1 < getCount()) {
             selectIndex++;
-        playMusic(selectIndex);
+            playMusic(selectIndex);
+        }
+        // notice: 2016/12/5 循环模式
     }
 
     public void playPrevious() {
@@ -171,6 +181,10 @@ public class NativePlayer {
         return cuttentPlayIndex;
     }
 
+    public void pauseCurrPlayMusic() {
+        NativeAudio.setPlayingUriAudioPlayer(false);
+    }
+
     private void playMp3File() {
         int count = getCount();
         if (count <= 0) {
@@ -190,7 +204,7 @@ public class NativePlayer {
         }
     }
 
-    private void playMp3Music(String uri) {
+    public void playMp3Music(String uri) {
         // 在后台线程中创建相关资源
         Observable.fromCallable((Func0<Boolean>) () -> {
             NativeAudio.setPlayingUriAudioPlayer(false);

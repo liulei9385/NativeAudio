@@ -53,6 +53,7 @@ public class LyricPresenter {
 
     public LyricPresenter() {
         this.lyricApiService = HttpManager.getInstance().getLyricApiService();
+        this.mKugouLyriService = HttpManager.getInstance().getKugouLyricApiService();
     }
 
     /**

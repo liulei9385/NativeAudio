@@ -4,7 +4,6 @@ import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
@@ -24,7 +23,6 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import com.bumptech.glide.Glide;
-import com.bumptech.glide.module.GlideModule;
 
 import java.io.File;
 import java.util.List;
@@ -48,9 +46,7 @@ import hello.leilei.utils.CollectionUtils;
 import hello.leilei.utils.DensityUtils;
 import hello.leilei.utils.NumberUtils;
 import hello.leilei.utils.RxUiUtils;
-import rx.Observable;
 import rx.Subscription;
-import timber.log.Timber;
 
 /**
  * Created by liulei on 16-3-18.
@@ -67,6 +63,8 @@ public class MainActivity extends BaseUiLoadActivity {
 
     public static final String RQ_AUDIO = Manifest.permission.RECORD_AUDIO;
     private Subscription seachFileSubscri;
+
+    private int cachePlayIndex = 0;
 
     class ActViewHolder {
 
@@ -96,31 +94,49 @@ public class MainActivity extends BaseUiLoadActivity {
         @OnClick({R.id.playNextIv, R.id.playIv, R.id.bottomRL})
         void onClick(View view) {
             final int viewId = view.getId();
+
             int playIndex = mNativePlayer.getCuttentPlayIndex();
+            boolean loadComplete = mNativePlayer.isResouceLoadComplete();
+            FileMetaData metaData = null;
 
             switch (viewId) {
 
                 case R.id.playIv:
 
+                    if (!loadComplete) {
+                        metaData = adapterPresenter.getItem(cachePlayIndex);
+                        mNativePlayer.playMp3Music(metaData.getUri());
+                        return;
+                    }
                     mNativePlayer.playMusic(playIndex);
-
                     break;
 
                 case R.id.playNextIv:
 
+                    if (!loadComplete) {
+                        if (cachePlayIndex + 1 > adapterPresenter.getCount())
+                            cachePlayIndex++;
+                        mNativePlayer.pauseCurrPlayMusic();
+                        metaData = adapterPresenter.getItem(cachePlayIndex);
+                        mNativePlayer.playMp3Music(metaData.getUri());
+                        return;
+                    }
                     mNativePlayer.playerNext();
 
                     break;
 
                 case R.id.bottomRL:
 
-                    if (playIndex >= 0) {
-                        FileMetaData fileMetaData = mNativePlayer.getMetaData(playIndex);
-                        if (fileMetaData == null) return;
-                        long parseLong = NumberUtils.safeParseLong(fileMetaData.duration, 0L);
-                        PlayActivity.start(MainActivity.this, fileMetaData.title, parseLong,
-                                fileMetaData.title + "-" + fileMetaData.album);
-                    }
+                    if (playIndex >= 0 && loadComplete)
+                        metaData = mNativePlayer.getMetaData(playIndex);
+                    if (!loadComplete)
+                        metaData = adapterPresenter.getItem(cachePlayIndex);
+
+                    if (metaData == null) return;
+                    long parseLong = NumberUtils.safeParseLong(metaData.duration, 0L);
+                    PlayActivity.start(MainActivity.this, metaData.title, parseLong,
+                            metaData.title + "-" + metaData.album);
+
                     break;
             }
         }
@@ -208,6 +224,9 @@ public class MainActivity extends BaseUiLoadActivity {
             mNativePlayer.playMusic(integer);
             setPlayUiWithData(fileMetaData);
             adapter.notifyDataSetChanged();
+
+            if (!mNativePlayer.isResouceLoadComplete())
+                cachePlayIndex = integer;
 
         });
 

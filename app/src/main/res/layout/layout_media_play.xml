@@ -8,10 +8,10 @@
     tools:ignore="ContentDescription">
 
     <ImageView
-        android:id="@+id/play_next"
+        android:id="@+id/play_previous"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:background="@drawable/ic_forward" />
+        android:background="@drawable/ic_backward" />
 
     <ImageView
         android:id="@+id/media_play"
@@ -22,9 +22,9 @@
         android:background="@drawable/ic_play" />
 
     <ImageView
-        android:id="@+id/play_previous"
+        android:id="@+id/play_next"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:background="@drawable/ic_backward" />
+        android:background="@drawable/ic_forward" />
 
 </LinearLayout>
