@@ -46,9 +46,11 @@ import hello.leilei.lyric.LyricPresenter;
 import hello.leilei.model.FileMetaData;
 import hello.leilei.utils.CollectionUtils;
 import hello.leilei.utils.DensityUtils;
+import hello.leilei.utils.NumberUtils;
 import hello.leilei.utils.RxUiUtils;
 import rx.Observable;
 import rx.Subscription;
+import timber.log.Timber;
 
 /**
  * Created by liulei on 16-3-18.
@@ -115,7 +117,8 @@ public class MainActivity extends BaseUiLoadActivity {
                     if (playIndex >= 0) {
                         FileMetaData fileMetaData = mNativePlayer.getMetaData(playIndex);
                         if (fileMetaData == null) return;
-                        PlayActivity.start(MainActivity.this, fileMetaData.title,
+                        long parseLong = NumberUtils.safeParseLong(fileMetaData.duration, 0L);
+                        PlayActivity.start(MainActivity.this, fileMetaData.title, parseLong,
                                 fileMetaData.title + "-" + fileMetaData.album);
                     }
                     break;

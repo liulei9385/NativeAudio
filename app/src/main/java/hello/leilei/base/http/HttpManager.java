@@ -19,7 +19,9 @@ public class HttpManager {
     private static HttpManager mHttpManager;
     private OkHttpClient mHttpClient;
     private Retrofit lyricRetrofit;
+    private Retrofit kugouRetrofit;
     private LyricApiService mLyricApiService;
+    private KugouLyriService mKugouLyriService;
 
     public static HttpManager getInstance() {
         if (mHttpManager == null) {
@@ -37,15 +39,32 @@ public class HttpManager {
         return mLyricApiService;
     }
 
+    public KugouLyriService getKugouLyricApiService() {
+        if (mKugouLyriService == null)
+            mKugouLyriService = provideKugouGsonCachedRestAdapter().create(KugouLyriService.class);
+        return mKugouLyriService;
+    }
+
     public Retrofit provideGsonCachedRestAdapter() {
         if (lyricRetrofit == null)
             lyricRetrofit = new Retrofit.Builder()
-                    .baseUrl(ApiConfig.BASE_URL)
+                    .baseUrl(ApiConfig.GECIME_BASE_URL)
                     .addConverterFactory(GsonConverterFactory.create())
                     .addCallAdapterFactory(RxJavaCallAdapterFactory.create())
                     .client(getCachedOkHttpClient())
                     .build();
         return lyricRetrofit;
+    }
+
+    public Retrofit provideKugouGsonCachedRestAdapter() {
+        if (kugouRetrofit == null)
+            kugouRetrofit = new Retrofit.Builder()
+                    .baseUrl(ApiConfig.KUGOU_BASE_URL)
+                    .addConverterFactory(GsonConverterFactory.create())
+                    .addCallAdapterFactory(RxJavaCallAdapterFactory.create())
+                    .client(getCachedOkHttpClient())
+                    .build();
+        return kugouRetrofit;
     }
 
     public OkHttpClient getCachedOkHttpClient() {

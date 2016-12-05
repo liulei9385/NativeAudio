@@ -39,6 +39,7 @@ public class PlayActivity extends BaseUiLoadActivity {
 
     private static final String KEY_SONNAME = "songName";
     private static final String KEY_SHOWNAME = "showName";
+    private static final String KEY_DURATION = "duration";
 
     @BindView(R.id.lyricV)
     LyricView lyricV;
@@ -59,15 +60,17 @@ public class PlayActivity extends BaseUiLoadActivity {
 
     private String songName;
     private String title;
+    private long duration = 0L;
     LyricPresenter mLyricPresenter;
     NativeAudio.OnPlayOverListener onPlayOverListener;
 
     NativePlayer mNativePlayer;
 
-    public static void start(Context context, String songName, String title) {
+    public static void start(Context context, String songName, long duration, String title) {
         Intent starter = new Intent(context, PlayActivity.class);
         starter.putExtra(KEY_SONNAME, songName);
         starter.putExtra(KEY_SHOWNAME, title);
+        starter.putExtra(KEY_DURATION, duration);
         context.startActivity(starter);
     }
 
@@ -148,6 +151,7 @@ public class PlayActivity extends BaseUiLoadActivity {
     public void prepareData(Intent mIntent) {
         songName = mIntent.getStringExtra(KEY_SONNAME);
         title = mIntent.getStringExtra(KEY_SHOWNAME);
+        duration = mIntent.getLongExtra(KEY_DURATION, duration);
     }
 
     @SuppressWarnings("unused")
@@ -174,8 +178,7 @@ public class PlayActivity extends BaseUiLoadActivity {
 
     @Override
     protected void obtainData() {
-
-        mLyricPresenter.downloadLyric(songName, filePath -> {
+        mLyricPresenter.downloadLyricWithKugou(songName, duration, filePath -> {
             lyricV.initLyricFile(new File(filePath));
             updateLyricSubscri = Observable.interval(20L, 120L, TimeUnit.MILLISECONDS)
                     .compose(RxUiUtils.applySchedulers())

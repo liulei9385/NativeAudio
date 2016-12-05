@@ -3,10 +3,12 @@ package hello.leilei.lyric;
 import android.media.MediaMetadataRetriever;
 import android.support.annotation.NonNull;
 import android.text.TextUtils;
+import android.util.Base64;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -17,12 +19,16 @@ import cn.bmob.v3.listener.QueryListListener;
 import es.dmoral.prefs.Prefs;
 import hello.leilei.MainApplication;
 import hello.leilei.base.http.HttpManager;
+import hello.leilei.base.http.KugouLyriService;
 import hello.leilei.base.http.LyricApiService;
 import hello.leilei.model.FileMetaData;
+import hello.leilei.model.KugouLyricPath;
+import hello.leilei.model.KugouLyricRecord;
 import hello.leilei.model.LyricRecordBean;
 import hello.leilei.utils.CollectionUtils;
 import hello.leilei.utils.FileUtils;
 import hello.leilei.utils.Md5Utils;
+import hello.leilei.utils.OkioUtils;
 import hello.leilei.utils.RxUiUtils;
 import okhttp3.ResponseBody;
 import okio.BufferedSink;
@@ -43,6 +49,7 @@ import timber.log.Timber;
 public class LyricPresenter {
 
     private LyricApiService lyricApiService;
+    private KugouLyriService mKugouLyriService;
 
     public LyricPresenter() {
         this.lyricApiService = HttpManager.getInstance().getLyricApiService();
@@ -73,6 +80,34 @@ public class LyricPresenter {
                 .compose(RxUiUtils.applySchedulers())
                 .subscribe(filePathAction, Throwable::printStackTrace);
 
+    }
+
+    public void downloadLyricWithKugou(final String songName, long duration, @NonNull Action1<String> filePathAction) {
+        // 先查看文件是否有内容呀
+        File lyricFile = FileUtils.createSdCacheFile(MainApplication.getApp(), songName + ".lrc");
+        mKugouLyriService.getLryicRecord(songName, duration)
+                .flatMap(new Func1<KugouLyricRecord, Observable<KugouLyricPath>>() {
+                    @Override
+                    public Observable<KugouLyricPath> call(KugouLyricRecord kugouLyricRecord) {
+                        List<KugouLyricRecord.CandidatesBean> candidates = kugouLyricRecord.candidates;
+                        if (CollectionUtils.isNotEmpty(candidates)) {
+                            KugouLyricRecord.CandidatesBean candidatesBean = candidates.get(0);
+                            return mKugouLyriService.downloadLryic(candidatesBean.id, candidatesBean.accesskey);
+                        }
+                        return null;
+                    }
+                })
+                .flatMap(kugouLyricPath -> {
+                    if (kugouLyricPath != null) {
+                        String conent = kugouLyricPath.content;
+                        byte[] lyricBytes = Base64.decode(conent.getBytes(Charset.defaultCharset()), Base64.NO_WRAP);
+                        OkioUtils.writeByteToFile(lyricFile, lyricBytes);
+                        return Observable.just(lyricFile.getPath());
+                    }
+                    return null;
+                })
+                .compose(RxUiUtils.applySchedulers())
+                .subscribe(filePathAction, Throwable::printStackTrace);
     }
 
     private Func1<LyricRecordBean, Observable<String>> downloadLyricFile(String songName, File lyricFile) {
