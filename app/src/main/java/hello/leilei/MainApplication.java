@@ -7,7 +7,9 @@ import cn.bmob.v3.BmobConfig;
 import timber.log.Timber;
 
 /**
- * Created by liulei on 2016/11/29.
+ * Created by liulei
+ * DATE: 2016/11/29
+ * TIME: 9:51
  */
 public class MainApplication extends Application {
 
@@ -41,7 +43,6 @@ public class MainApplication extends Application {
                 .setFileExpiration(2500)
                 .build();
         Bmob.initialize(config);
-
 
     }
 }

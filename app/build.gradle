@@ -14,6 +14,7 @@ android {
         targetSdkVersion 24
         versionCode 1
         versionName "1.0"
+        testInstrumentationRunner 'android.support.test.runner.AndroidJUnitRunner'
     }
 
     compileOptions {
@@ -21,11 +22,26 @@ android {
         targetCompatibility JavaVersion.VERSION_1_8
     }
 
+    // Always show the result of every unit test, even if it passes.
+    testOptions.unitTests.all {
+        testLogging {
+            events 'passed', 'skipped', 'failed', 'standardOut', 'standardError'
+        }
+    }
+
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
+    }
+
+    lintOptions {
+        textReport true
+        textOutput 'stdout'
+        disable 'InvalidPackage'
+        abortOnError false
+        disable "MissingTranslation" // 禁用中英文string.xml的强制lint
     }
 
     /* repositories {
@@ -39,7 +55,17 @@ dependencies {
 
     compile fileTree(dir: 'libs', include: ['*.jar'])
 
-    testCompile 'junit:junit:4.12'
+    // Android Testing Support Library's runner and rules
+    androidTestCompile "${rootProject.ext.test_junit}"
+    androidTestCompile "${rootProject.ext.test_runner}"
+    androidTestCompile "${rootProject.ext.test_rules}"
+    //androidTestCompile "${rootProject.ext.espresso_core}"
+
+    androidTestCompile "${rootProject.ext.support_design}"
+    androidTestCompile "${rootProject.ext.support_annotations}"
+    androidTestCompile "${rootProject.ext.recyclerview_v7}"
+
+    testCompile "${rootProject.ext.test_junit}"
     compile "${rootProject.ext.recyclerview_v7}"
     // design 包括 v4,v7
     compile "${rootProject.ext.support_design}"
@@ -53,6 +79,8 @@ dependencies {
     compile "${rootProject.ext.okhttp_interceptor}"
     compile "${rootProject.ext.okio}"
     compile "${rootProject.ext.gson}"
+
+    compile "${rootProject.ext.Prefs}"
 
     //retrofit
     compile "${rootProject.ext.retrofit}"

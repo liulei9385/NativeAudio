@@ -46,6 +46,7 @@ public class SplashActivity extends AppCompatActivity {
         ImageView splashIv = ButterKnife.findById(this, R.id.splashImgV);
 
         BmobQuery<SplashImgBean> imgQuery = new BmobQuery<>();
+        imgQuery.setCachePolicy(BmobQuery.CachePolicy.NETWORK_ELSE_CACHE);
         imgQuery.findObjects(new FindListener<SplashImgBean>() {
             @Override
             public void done(List<SplashImgBean> list, BmobException e) {

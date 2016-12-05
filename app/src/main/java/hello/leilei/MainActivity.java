@@ -4,7 +4,7 @@ import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.graphics.drawable.BitmapDrawable;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
@@ -23,12 +23,19 @@ import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.module.GlideModule;
+
+import java.io.File;
 import java.util.List;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
+import cn.bmob.v3.BmobQuery;
 import cn.bmob.v3.BmobUser;
+import cn.bmob.v3.exception.BmobException;
+import cn.bmob.v3.listener.FindListener;
 import hello.leilei.base.BaseUiLoadActivity;
 import hello.leilei.base.audioplayer.IPlayerCallback;
 import hello.leilei.base.audioplayer.NativePlayer;
@@ -40,6 +47,7 @@ import hello.leilei.model.FileMetaData;
 import hello.leilei.utils.CollectionUtils;
 import hello.leilei.utils.DensityUtils;
 import hello.leilei.utils.RxUiUtils;
+import rx.Observable;
 import rx.Subscription;
 
 /**
@@ -86,11 +94,13 @@ public class MainActivity extends BaseUiLoadActivity {
         @OnClick({R.id.playNextIv, R.id.playIv, R.id.bottomRL})
         void onClick(View view) {
             final int viewId = view.getId();
+            int playIndex = mNativePlayer.getCuttentPlayIndex();
+
             switch (viewId) {
 
                 case R.id.playIv:
 
-                    mNativePlayer.playMusic(0);
+                    mNativePlayer.playMusic(playIndex);
 
                     break;
 
@@ -102,9 +112,8 @@ public class MainActivity extends BaseUiLoadActivity {
 
                 case R.id.bottomRL:
 
-                    int currentIndex = mNativePlayer.getCuttentPlayIndex();
-                    if (currentIndex >= 0) {
-                        FileMetaData fileMetaData = mNativePlayer.getMetaData(currentIndex);
+                    if (playIndex >= 0) {
+                        FileMetaData fileMetaData = mNativePlayer.getMetaData(playIndex);
                         if (fileMetaData == null) return;
                         PlayActivity.start(MainActivity.this, fileMetaData.title,
                                 fileMetaData.title + "-" + fileMetaData.album);
@@ -125,8 +134,8 @@ public class MainActivity extends BaseUiLoadActivity {
         //  解决 splashAct 过度到 MainAct后的status 有偏移的问题。
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
             View decorView = getWindow().getDecorView();
-            if (decorView != null)
-                decorView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE);
+            decorView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                    | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN);
         }
 
         super.onCreate(savedInstanceState);
@@ -199,25 +208,42 @@ public class MainActivity extends BaseUiLoadActivity {
 
         });
 
+
         List<FileMetaData> metaDatas = mNativePlayer.getFileMetaDatas();
         mNativePlayer.addPlayerCallback(playerCallback);
         if (!CollectionUtils.isEmpty(metaDatas)) {
             adapterPresenter.addAllItem(mNativePlayer.getFileMetaDatas());
             setPlayUiWithData(metaDatas.get(0));
+        } else {
+            BmobQuery<FileMetaData> dataQuery = new BmobQuery<>();
+            dataQuery.setCachePolicy(BmobQuery.CachePolicy.CACHE_ELSE_NETWORK);
+            dataQuery.findObjects(new FindListener<FileMetaData>() {
+                @Override
+                public void done(List<FileMetaData> list, BmobException e) {
+                    if (e == null && CollectionUtils.isNotEmpty(list)) {
+                        // notice: 2016/12/5 先取缓存的数据
+                        if (CollectionUtils.isEmpty(mNativePlayer.getFileMetaDatas()))
+                            adapterPresenter.addAllItem(list);
+                    }
+                }
+            });
         }
 
-        mActViewHolder.mProgressBar.setMax(NativePlayer.SEEKBAR_MAX);
+        mActViewHolder.mProgressBar.setMax(NativePlayer.SEEKBAR_MAX / 2);
     }
 
     IPlayerCallback playerCallback = new IPlayerCallback() {
         @Override
         public void onPlayState(int state) {
             setPlayImageState(state);
+            int selectIndex = mNativePlayer.getCuttentPlayIndex();
+            setPlayUiWithData(adapterPresenter.getItem(selectIndex));
         }
 
         @Override
         public void onProgressChanged(NativePlayer.ProgressItem mProgressItem) {
-            mActViewHolder.mProgressBar.setProgress((int) (mProgressItem.percent * NativePlayer.SEEKBAR_MAX));
+            int max = mActViewHolder.mProgressBar.getMax();
+            mActViewHolder.mProgressBar.setProgress((int) (mProgressItem.percent * max));
         }
 
         @Override
@@ -253,12 +279,11 @@ public class MainActivity extends BaseUiLoadActivity {
         mActViewHolder.titleTv.setText(metaData.title);
         mActViewHolder.albumTv.setText(metaData.album);
 
-        metaData.getBitmapObservable()
-                .subscribe(bitmap -> {
-                    BitmapDrawable bitmapDrawable =
-                            new BitmapDrawable(getResources(), bitmap);
-                    mActViewHolder.albumIv.setImageDrawable(bitmapDrawable);
-                }, Throwable::printStackTrace);
+        String url = mLyricPresenter.getArtThumbUrl(metaData);
+        Glide.with(this)
+                .fromFile()
+                .load(new File(url))
+                .into(mActViewHolder.albumIv);
     }
 
     void setPlayImageState(int state) {

@@ -10,6 +10,11 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import cn.bmob.v3.BmobBatch;
+import cn.bmob.v3.datatype.BatchResult;
+import cn.bmob.v3.exception.BmobException;
+import cn.bmob.v3.listener.QueryListListener;
+import es.dmoral.prefs.Prefs;
 import hello.leilei.MainApplication;
 import hello.leilei.base.http.HttpManager;
 import hello.leilei.base.http.LyricApiService;
@@ -17,6 +22,7 @@ import hello.leilei.model.FileMetaData;
 import hello.leilei.model.LyricRecordBean;
 import hello.leilei.utils.CollectionUtils;
 import hello.leilei.utils.FileUtils;
+import hello.leilei.utils.Md5Utils;
 import hello.leilei.utils.RxUiUtils;
 import okhttp3.ResponseBody;
 import okio.BufferedSink;
@@ -108,10 +114,29 @@ public class LyricPresenter {
 
     public Observable<List<FileMetaData>> getMetaDataAction(List<String> fileUris) {
         return Observable.fromCallable((Func0<List<FileMetaData>>) () -> getMeteData(fileUris))
+                .map(fileMetaDatas -> {
+                    // notice: 2016/12/5 插入数据到bmob云中..
+                    long metaDataTime = Prefs.with(MainApplication.getApp()).readLong("pushFileMetaDataTime", 0L);
+                    if (System.currentTimeMillis() - metaDataTime >= 30 * 60 * 1000) {
+                        Timber.d("inset bach fileMata to Bmob ....");
+                        new BmobBatch().insertBatch(new ArrayList<>(fileMetaDatas))
+                                .doBatch(new QueryListListener<BatchResult>() {
+                                    @Override
+                                    public void done(List<BatchResult> list, BmobException e) {
+                                        if (CollectionUtils.isNotEmpty(list)) {
+                                            Timber.d("FileMetaData\t" + list.size() + "个数据批量添加成功");
+                                            Prefs.with(MainApplication.getApp())
+                                                    .writeLong("pushFileMetaDataTime", System.currentTimeMillis());
+                                        }
+                                        if (e != null)
+                                            Timber.e(e.getMessage(), e);
+                                    }
+                                });
+                    }
+                    return fileMetaDatas;
+                })
                 .compose(RxUiUtils.applySchedulers());
     }
-
-    private MediaMetadataRetriever metaRetriver;
 
     private List<FileMetaData> getMeteData(List<String> fileUris) {
 
@@ -120,8 +145,8 @@ public class LyricPresenter {
         Timber.d("begin getMeteDatas ");
 
         try {
-            if (metaRetriver == null)
-                metaRetriver = new MediaMetadataRetriever();
+
+            MediaMetadataRetriever metaRetriver = new MediaMetadataRetriever();
 
             List<FileMetaData> fileMetaDatas = new ArrayList<>();
             //noinspection Convert2streamapi
@@ -132,10 +157,7 @@ public class LyricPresenter {
                     fileMetaDatas.add(metaData);
             }
 
-            if (metaRetriver != null) {
-                metaRetriver.release();
-                metaRetriver = null;
-            }
+            metaRetriver.release();
 
             return fileMetaDatas;
 
@@ -154,12 +176,14 @@ public class LyricPresenter {
 
             metaData.setUri(fileUri);
 
-            metaData.art = metaRetriver.getEmbeddedPicture();
             metaData.author = metaRetriver.extractMetadata(MediaMetadataRetriever.METADATA_KEY_AUTHOR);
             metaData.duration = metaRetriver.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION);
             metaData.album = metaRetriver.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ALBUM);
             metaData.artlist = metaRetriver.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ARTIST);
             metaData.title = metaRetriver.extractMetadata(MediaMetadataRetriever.METADATA_KEY_TITLE);
+
+            //notice 缓存图片，并生成一个对应的uri供glide加载
+            cacheArtThumbForFile(metaData, metaRetriver.getEmbeddedPicture());
 
             return metaData;
 
@@ -168,6 +192,37 @@ public class LyricPresenter {
         }
 
         return null;
+    }
+
+    private void cacheArtThumbForFile(FileMetaData metaData, byte[] artByte) {
+        if (artByte == null) return;
+        File sdCacheFile = FileUtils.createSdCacheFile(MainApplication.getApp(),
+                getArtThumbName(metaData));
+        if (sdCacheFile == null) return;
+        BufferedSink bufferedSink = null;
+        try {
+            bufferedSink = Okio.buffer(Okio.sink(sdCacheFile));
+            bufferedSink.write(artByte);
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                if (bufferedSink != null)
+                    bufferedSink.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private String getArtThumbName(FileMetaData metaData) {
+        String url = metaData.title + File.separator + metaData.album + "_thumb.jpg";
+        return "thumbCache" + File.separator + Md5Utils.md5(url);
+    }
+
+    public String getArtThumbUrl(FileMetaData metaData) {
+        return FileUtils.getExternalCacheDir(MainApplication.getApp())
+                + File.separator + getArtThumbName(metaData);
     }
 
 }

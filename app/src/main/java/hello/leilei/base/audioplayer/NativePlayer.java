@@ -115,6 +115,18 @@ public class NativePlayer {
         return null;
     }
 
+    public void playerNext() {
+        if (selectIndex + 1 < getCount())
+            selectIndex++;
+        playMusic(selectIndex);
+    }
+
+    public void playPrevious() {
+        if (selectIndex >= 1)
+            selectIndex--;
+        playMusic(selectIndex);
+    }
+
     public void playMusic(int selectIndex) {
         this.selectIndex = selectIndex;
         int state = NativeAudio.getPlayingUriState();
@@ -157,14 +169,6 @@ public class NativePlayer {
 
     public int getCuttentPlayIndex() {
         return cuttentPlayIndex;
-    }
-
-    public void playerNext() {
-        playMusic(cuttentPlayIndex++);
-    }
-
-    public void playPrevious() {
-        playMusic(cuttentPlayIndex--);
     }
 
     private void playMp3File() {
@@ -215,7 +219,7 @@ public class NativePlayer {
 
     private void changePlayProgress() {
         RxUiUtils.unsubscribe(changeProgressSubscri);
-        changeProgressSubscri = Observable.interval(0L, 1000L, TimeUnit.MICROSECONDS)
+        changeProgressSubscri = Observable.interval(0L, 500L, TimeUnit.MICROSECONDS)
                 .flatMap(aLong -> Observable.fromCallable((Func0<ProgressItem>) () -> {
                     long duration = NativeAudio.getDutration();
                     long position = NativeAudio.getPostion();
@@ -237,7 +241,7 @@ public class NativePlayer {
     public ConnectableObservable<List<String>> getSearchFileObserable() {
         if (searchFileObser == null)
             searchFileObser = Observable.fromCallable((Func0<List<String>>) () -> {
-                File sdDir = FileUtils.getExternalSdDir(MainApplication.getApp());
+                File sdDir = FileUtils.getExternalSdDir();
                 List<String> mp3FileList = null;
                 if (sdDir != null)
                     mp3FileList = FileFind.getMp3FileFromPath(sdDir.getPath());

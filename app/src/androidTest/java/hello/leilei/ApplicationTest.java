@@ -1,4 +1,4 @@
-package com.example.liulei.nativeaudio;
+package hello.leilei;
 
 import android.app.Application;
 import android.test.ApplicationTestCase;

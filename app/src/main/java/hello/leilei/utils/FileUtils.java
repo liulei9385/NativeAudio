@@ -5,18 +5,14 @@
 package hello.leilei.utils;
 
 import android.content.Context;
-import android.content.res.AssetManager;
 import android.graphics.Bitmap;
-import android.graphics.drawable.Drawable;
 import android.os.Environment;
 import android.text.TextUtils;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
@@ -26,7 +22,7 @@ import java.nio.channels.FileChannel;
  * DATA: 2015/1/16
  * TIME: 16:59
  */
-@SuppressWarnings("UnusedAssignment")
+@SuppressWarnings({"UnusedAssignment", "ResultOfMethodCallIgnored"})
 public class FileUtils {
 
     private FileUtils() {
@@ -125,13 +121,21 @@ public class FileUtils {
         return file.exists();
     }
 
+    public static File getExternalSdDir() {
+        if (Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED)) {
+            return Environment.getExternalStorageDirectory();
+        }
+        return null;
+    }
+
     public static File getExternalCacheDir(Context context) {
 
         if (Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED)) {
             //跟路径
-            File file = getExternalSdDir(context);
+            File file = Environment.getExternalStorageDirectory();
             if (file != null) {
                 File path = buildPath(file, "Android", "data", context.getPackageName(), "cache");
+                //noinspection ResultOfMethodCallIgnored
                 path.mkdirs();
                 return path;
             } else return Environment.getExternalStorageDirectory();
@@ -139,38 +143,8 @@ public class FileUtils {
         return getInternalCacheStorage(context);
     }
 
-    public static File getExternalSdDir(Context context) {
-        File sdDir = getExternalSdDirBuildPath();
-        if (sdDir == null && Environment.getExternalStorageState()
-                .equals(Environment.MEDIA_MOUNTED)) {
-            sdDir = Environment.getExternalStorageDirectory();
-        }
-        if (sdDir == null)
-            sdDir = getInternalCacheStorage(context);
-        if (sdDir != null) {
-            try {
-                return sdDir.getCanonicalFile();
-            } catch (IOException e) {
-                return sdDir.getAbsoluteFile();
-            }
-        }
-        return null;
-    }
-
-    public static File getExternalSdDirBuildPath() {
-        String path = System.getenv("EXTERNAL_STORAGE");
-        if (!TextUtils.isEmpty(path)) {
-            File file = new File(path);
-            if (file.exists())
-                return file;
-        }
-        return null;
-    }
-
     /**
      * Append path segments to given base path, returning result.
-     *
-     * @hide
      */
     public static File buildPath(File base, String... segments) {
         File cur = base;
@@ -182,86 +156,6 @@ public class FileUtils {
             }
         }
         return cur;
-    }
-
-    //debug
-    public static void writeToFile(String message, File file) {
-        try {
-            if (message == null) return;
-            if (!file.exists())
-                file.createNewFile();
-            FileOutputStream fos = new FileOutputStream(file, true);
-            byte[] data = message.getBytes();
-            fos.write(data, 0, data.length);
-            fos.flush();
-            fos.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    /**
-     * @param filePath    fielPath
-     * @param charsetName The name of a supported {@link java.nio.charset.Charset </code>charset<code>}
-     * @return if file not exist, return null, else return content of file
-     * @throws RuntimeException if an error occurs while operator BufferedReader
-     */
-    public static StringBuilder readFile(String filePath, String charsetName) {
-        File file = new File(filePath);
-        StringBuilder fileContent = new StringBuilder("");
-        if (!file.exists() || !file.isFile()) {
-            return null;
-        }
-
-        BufferedReader reader = null;
-        try {
-            InputStreamReader is = new InputStreamReader(new FileInputStream(file), charsetName);
-            reader = new BufferedReader(is);
-            String line;
-            while ((line = reader.readLine()) != null) {
-                if (!fileContent.toString().equals("")) {
-                    fileContent.append("\r\n");
-                }
-                fileContent.append(line);
-            }
-            reader.close();
-            return fileContent;
-        } catch (IOException e) {
-            throw new RuntimeException("IOException occurred. ", e);
-        } finally {
-            if (reader != null) {
-                try {
-                    reader.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-    }
-
-    public static String readAssest(Context context, String assertPath) {
-        AssetManager assetManager = context.getAssets();
-        BufferedReader bufferedReader = null;
-        try {
-            InputStreamReader isReader = new InputStreamReader(assetManager.open(assertPath), "utf-8");
-            bufferedReader = new BufferedReader(isReader);
-            String line;
-            StringBuilder sb = new StringBuilder();
-            while ((line = bufferedReader.readLine()) != null) {
-                sb.append(line).append("\n");
-            }
-            return sb.toString();
-        } catch (IOException e) {
-            e.printStackTrace();
-        } finally {
-            if (bufferedReader != null)
-                try {
-                    bufferedReader.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-        }
-        return null;
     }
 
     /**
@@ -306,12 +200,14 @@ public class FileUtils {
         return result;
     }
 
+    //noinspection ResultOfMethodCallIgnored
     public static File createFile(File dir, String fileName) {
         if (fileName == null || fileName.equals("")) return null;
         if (!dir.exists()) dir.mkdirs();
         File file = new File(dir, fileName);
         if (!file.exists()) {
             try {
+                //noinspection ResultOfMethodCallIgnored
                 file.createNewFile();
             } catch (IOException e) {
                 e.printStackTrace();
@@ -328,7 +224,7 @@ public class FileUtils {
      * @return
      */
     public static File createSdFile(Context context, String fileName) {
-        return createFile(getExternalSdDir(context), fileName);
+        return createFile(getExternalCacheDir(context), fileName);
     }
 
     /**
@@ -339,6 +235,13 @@ public class FileUtils {
      * @return
      */
     public static File createSdCacheFile(Context context, String fileName) {
+        if (TextUtils.isEmpty(fileName)) return null;
+        File dir = getExternalCacheDir(context);
+        if (fileName.matches("\\S*[/]\\S*")) {
+            int index = fileName.lastIndexOf("/");
+            String dirName = fileName.substring(0, index);
+            createDir(dir, dirName);
+        }
         return createFile(getExternalCacheDir(context), fileName);
     }
 
