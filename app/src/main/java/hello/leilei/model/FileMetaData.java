@@ -17,8 +17,6 @@ import rx.functions.Func0;
  * DATE: 2016/12/2
  * TIME: 8:54
  */
-
-
 public class FileMetaData extends BmobObject {
 
     private String uri;  //本地文件路径

@@ -65,6 +65,9 @@ public class LyricsParser {
         if (start < 0 || end < 0)
             return new LyricBean(0, "");
 
+
+        // TODO: 2016/12/2 继续解决
+        //[00:05.00][02:52.99][01:35.78][00:29.82]实现愿望用努力
         String timeStr = line.substring(start + 1, end);
         if (timeStr.matches("\\d{2}[:]\\d{2}[.]\\d{2}")) {
             long time = parserStartPoint(timeStr);
