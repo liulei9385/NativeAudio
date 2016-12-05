@@ -10,7 +10,6 @@ import com.bumptech.glide.load.resource.drawable.GlideDrawable;
 import com.bumptech.glide.request.RequestListener;
 import com.bumptech.glide.request.target.Target;
 
-import java.io.File;
 import java.util.List;
 import java.util.Random;
 
@@ -24,6 +23,7 @@ import hello.leilei.base.audioplayer.NativePlayer;
 import hello.leilei.model.SplashImgBean;
 import hello.leilei.utils.CollectionUtils;
 import hello.leilei.utils.RxUiUtils;
+import hello.leilei.utils.StatusBarUtils;
 import timber.log.Timber;
 
 /**
@@ -36,8 +36,10 @@ public class SplashActivity extends AppCompatActivity {
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_splash);
 
+        StatusBarUtils.hideStatusBar(this);
+
+        setContentView(R.layout.activity_splash);
         NativePlayer.getInstance()
                 .startToSearchMp3File();
 

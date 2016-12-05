@@ -122,6 +122,13 @@ public class MainActivity extends BaseUiLoadActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        //  解决 splashAct 过度到 MainAct后的status 有偏移的问题。
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
+            View decorView = getWindow().getDecorView();
+            if (decorView != null)
+                decorView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE);
+        }
+
         super.onCreate(savedInstanceState);
 
         ActionBar actionBar = getSupportActionBar();

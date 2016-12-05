@@ -126,61 +126,6 @@ public class ViewUtils {
     }
 
     /**
-     * 显示toast消息
-     *
-     * @param context context
-     * @param text    text
-     * @param isLong  islong
-     */
-    public static void showToast(final Context context, final CharSequence text, boolean isLong) {
-        if (context == null)
-            return;
-        int duration = Toast.LENGTH_LONG;
-        if (!isLong)
-            duration = Toast.LENGTH_SHORT;
-
-        if (isRuninMain())
-            Toast.makeText(context.getApplicationContext(),
-                    text, duration).show();
-        else {
-            final int showDuration = duration;
-            new Handler(Looper.getMainLooper()).post(new Runnable() {
-                @SuppressWarnings("ResourceType")
-                @Override
-                public void run() {
-                    Toast.makeText(context
-                            .getApplicationContext(), text, showDuration).show();
-                }
-            });
-        }
-    }
-
-    /**
-     * 显示toast消息
-     *
-     * @param context context
-     * @param text    text
-     * @param isLong  islong
-     */
-    public static void showToast(final Context context, final @StringRes int textResId, final boolean isLong) {
-        if (context == null ||
-                textResId <= 0)
-            return;
-        final String text = context.getString(textResId);
-
-        if (!isRuninMain()) {
-            new Handler(Looper.getMainLooper())
-                    .post(new Runnable() {
-                        @Override
-                        public void run() {
-                            showToast(context.getApplicationContext(), text, isLong);
-                        }
-                    });
-        } else
-            showToast(context.getApplicationContext(), text, isLong);
-    }
-
-    /**
      * 当前view是否显示
      *
      * @param view
