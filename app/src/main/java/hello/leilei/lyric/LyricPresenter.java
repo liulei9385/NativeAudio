@@ -5,12 +5,15 @@ import android.support.annotation.NonNull;
 import android.text.TextUtils;
 import android.util.Base64;
 
+import com.google.android.exoplayer2.video.MediaCodecVideoRenderer;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 import cn.bmob.v3.BmobBatch;
 import cn.bmob.v3.datatype.BatchResult;
@@ -152,23 +155,23 @@ public class LyricPresenter {
         return Observable.fromCallable((Func0<List<FileMetaData>>) () -> getMeteData(fileUris))
                 .map(fileMetaDatas -> {
                     // notice: 2016/12/5 插入数据到bmob云中..
-                    long metaDataTime = Prefs.with(MainApplication.getApp()).readLong("pushFileMetaDataTime", 0L);
-                    if (System.currentTimeMillis() - metaDataTime >= 30 * 60 * 1000) {
-                        Timber.d("inset bach fileMata to Bmob ....");
-                        new BmobBatch().insertBatch(new ArrayList<>(fileMetaDatas))
-                                .doBatch(new QueryListListener<BatchResult>() {
-                                    @Override
-                                    public void done(List<BatchResult> list, BmobException e) {
-                                        if (CollectionUtils.isNotEmpty(list)) {
-                                            Timber.d("FileMetaData\t" + list.size() + "个数据批量添加成功");
-                                            Prefs.with(MainApplication.getApp())
-                                                    .writeLong("pushFileMetaDataTime", System.currentTimeMillis());
-                                        }
-                                        if (e != null)
-                                            Timber.e(e.getMessage(), e);
+                    /*long metaDataTime = Prefs.with(MainApplication.getApp()).readLong("pushFileMetaDataTime", 0L);
+                    if (System.currentTimeMillis() - metaDataTime >= 30 * 60 * 1000) {*/
+                    Timber.d("inset bach fileMata to Bmob ....");
+                    new BmobBatch().insertBatch(new ArrayList<>(fileMetaDatas))
+                            .doBatch(new QueryListListener<BatchResult>() {
+                                @Override
+                                public void done(List<BatchResult> list, BmobException e) {
+                                    if (CollectionUtils.isNotEmpty(list)) {
+                                        Timber.d("FileMetaData\t" + list.size() + "个数据批量添加成功");
+                                        Prefs.with(MainApplication.getApp())
+                                                .writeLong("pushFileMetaDataTime", System.currentTimeMillis());
                                     }
-                                });
-                    }
+                                    if (e != null)
+                                        Timber.e(e.getMessage(), e);
+                                }
+                            });
+                    //}
                     return fileMetaDatas;
                 })
                 .compose(RxUiUtils.applySchedulers());
@@ -217,6 +220,7 @@ public class LyricPresenter {
             metaData.album = metaRetriver.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ALBUM);
             metaData.artlist = metaRetriver.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ARTIST);
             metaData.title = metaRetriver.extractMetadata(MediaMetadataRetriever.METADATA_KEY_TITLE);
+            metaData.phoneid = FileMetaData.getUuid();
 
             //notice 缓存图片，并生成一个对应的uri供glide加载
             cacheArtThumbForFile(metaData, metaRetriver.getEmbeddedPicture());

@@ -70,7 +70,7 @@ ext {
     butterknife_compiler = 'com.jakewharton:butterknife-compiler:' + butterknifeVersion
 
     // http网络库
-    okhttp = 'com.squareup.okhttp3:okhttp:3.4.2'
+    okhttp = 'com.squareup.okhttp3:okhttp:3.5.0'
     okio = 'com.squareup.okio:okio:1.11.0'
     okhttp_interceptor = 'com.squareup.okhttp3:logging-interceptor:3.4.2'
     okhttpws = 'com.squareup.okhttp3:okhttp-ws:3.4.2'

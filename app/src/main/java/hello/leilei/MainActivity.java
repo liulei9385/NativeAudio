@@ -4,6 +4,7 @@ import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
@@ -25,6 +26,7 @@ import android.widget.TextView;
 import com.bumptech.glide.Glide;
 
 import java.io.File;
+import java.net.URL;
 import java.util.List;
 
 import butterknife.BindView;
@@ -35,6 +37,7 @@ import cn.bmob.v3.BmobUser;
 import cn.bmob.v3.exception.BmobException;
 import cn.bmob.v3.listener.FindListener;
 import hello.leilei.base.BaseUiLoadActivity;
+import hello.leilei.base.audioplayer.AudioPlayer;
 import hello.leilei.base.audioplayer.IPlayerCallback;
 import hello.leilei.base.audioplayer.NativePlayer;
 import hello.leilei.base.decoration.LinearDividerItemDecoration;
@@ -221,12 +224,14 @@ public class MainActivity extends BaseUiLoadActivity {
 
         adapter.setOnItemClickListener((viewGroup, view, fileMetaData, integer) -> {
 
-            mNativePlayer.playMusic(integer);
+            /*mNativePlayer.playMusic(integer);
             setPlayUiWithData(fileMetaData);
             adapter.notifyDataSetChanged();
 
             if (!mNativePlayer.isResouceLoadComplete())
-                cachePlayIndex = integer;
+                cachePlayIndex = integer;*/
+
+            AudioPlayer.getInstance().exoPlayMp3(Uri.fromFile(new File(fileMetaData.getUri())));
 
         });
 
@@ -239,6 +244,7 @@ public class MainActivity extends BaseUiLoadActivity {
         } else {
             BmobQuery<FileMetaData> dataQuery = new BmobQuery<>();
             dataQuery.setCachePolicy(BmobQuery.CachePolicy.CACHE_ELSE_NETWORK);
+            dataQuery.addWhereEqualTo("phoneid", FileMetaData.getUuid());
             dataQuery.findObjects(new FindListener<FileMetaData>() {
                 @Override
                 public void done(List<FileMetaData> list, BmobException e) {

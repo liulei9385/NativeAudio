@@ -4,9 +4,11 @@ import android.text.TextUtils;
 import android.util.Base64;
 
 import java.nio.charset.Charset;
+import java.util.UUID;
 
 import cn.bmob.v3.BmobObject;
-import hello.leilei.base.audioplayer.NativePlayer;
+import es.dmoral.prefs.Prefs;
+import hello.leilei.MainApplication;
 
 /**
  * Created by liulei
@@ -16,6 +18,8 @@ import hello.leilei.base.audioplayer.NativePlayer;
 public class FileMetaData extends BmobObject {
 
     private String uri;  //本地文件路径
+
+    public String phoneid; //设备唯一编号
 
     public String author;
     public String title;
@@ -35,6 +39,16 @@ public class FileMetaData extends BmobObject {
             return new String(bytes, 0, bytes.length);
         }
         return null;
+    }
+
+    public static String getUuid() {
+        Prefs prefs = Prefs.with(MainApplication.getApp());
+        String phoneUuid = prefs.read("phoneUuid");
+        if (TextUtils.isEmpty(phoneUuid)) {
+            phoneUuid = UUID.randomUUID().toString();
+            prefs.write("phoneUuid", phoneUuid);
+        }
+        return phoneUuid;
     }
 
 }

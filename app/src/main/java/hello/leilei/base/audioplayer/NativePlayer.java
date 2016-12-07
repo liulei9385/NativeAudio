@@ -1,6 +1,16 @@
 package hello.leilei.base.audioplayer;
 
+import android.content.Context;
+import android.net.Uri;
+import android.os.Handler;
 import android.text.TextUtils;
+
+import com.google.android.exoplayer2.ExoPlayerFactory;
+import com.google.android.exoplayer2.SimpleExoPlayer;
+import com.google.android.exoplayer2.extractor.mp3.Mp3Extractor;
+import com.google.android.exoplayer2.source.ExtractorMediaSource;
+import com.google.android.exoplayer2.trackselection.DefaultTrackSelector;
+import com.google.android.exoplayer2.upstream.FileDataSourceFactory;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -137,6 +147,22 @@ public class NativePlayer {
         playMusic(selectIndex);
     }
 
+    public void enableProgressChange(boolean isEnable) {
+        if (!isEnable)
+            RxUiUtils.unsubscribe(changeProgressSubscri);
+        else {
+            changePlayProgress();
+        }
+    }
+
+    public int getCuttentPlayIndex() {
+        return cuttentPlayIndex;
+    }
+
+    public void pauseCurrPlayMusic() {
+        NativeAudio.setPlayingUriAudioPlayer(false);
+    }
+
     public void playMusic(int selectIndex) {
         this.selectIndex = selectIndex;
         int state = NativeAudio.getPlayingUriState();
@@ -167,22 +193,6 @@ public class NativePlayer {
                 setPlayImageState(PLAYED);
             }
         }
-    }
-
-    public void enableProgressChange(boolean isEnable) {
-        if (!isEnable)
-            RxUiUtils.unsubscribe(changeProgressSubscri);
-        else {
-            changePlayProgress();
-        }
-    }
-
-    public int getCuttentPlayIndex() {
-        return cuttentPlayIndex;
-    }
-
-    public void pauseCurrPlayMusic() {
-        NativeAudio.setPlayingUriAudioPlayer(false);
     }
 
     private void playMp3File() {
@@ -296,6 +306,16 @@ public class NativePlayer {
             for (IPlayerCallback callback : mPlayerCallbacks)
                 callback.onPlayState(state);
         }
+    }
+
+    void exoPlayMp3(Context context, Uri localFileUri) {
+        Handler handler = new Handler();
+        DefaultTrackSelector trackSelector = new DefaultTrackSelector(handler, null);
+        SimpleExoPlayer exoPlayer = ExoPlayerFactory.newSimpleInstance(context, trackSelector, null);
+        ExtractorMediaSource mediaSource = new ExtractorMediaSource(localFileUri,
+                new FileDataSourceFactory(), Mp3Extractor.FACTORY, handler, null);
+        exoPlayer.prepare(mediaSource);
+        exoPlayer.setPlayWhenReady(true);
     }
 
 }

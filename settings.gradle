@@ -1,1 +1,2 @@
-include ':app', ':library', ':bmoblibrary'
+include ':app', ':library', ':bmoblibrary', ':ffmpeg'
+include ':extensions:extension-ffmpeg'
