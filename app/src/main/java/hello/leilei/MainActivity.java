@@ -4,12 +4,12 @@ import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.NavigationView;
 import android.support.v4.app.ActivityCompat;
+import android.support.v4.util.ArrayMap;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.ActionBarDrawerToggle;
@@ -26,7 +26,6 @@ import android.widget.TextView;
 import com.bumptech.glide.Glide;
 
 import java.io.File;
-import java.net.URL;
 import java.util.List;
 
 import butterknife.BindView;
@@ -38,8 +37,10 @@ import cn.bmob.v3.exception.BmobException;
 import cn.bmob.v3.listener.FindListener;
 import hello.leilei.base.BaseUiLoadActivity;
 import hello.leilei.base.audioplayer.AudioPlayer;
+import hello.leilei.base.audioplayer.BasePlayer;
 import hello.leilei.base.audioplayer.IPlayerCallback;
 import hello.leilei.base.audioplayer.NativePlayer;
+import hello.leilei.base.audioplayer.PlayerLoader;
 import hello.leilei.base.decoration.LinearDividerItemDecoration;
 import hello.leilei.base.ui.adapter.AdapterPresenter;
 import hello.leilei.base.ui.adapter.MvpRecyclerAdapter;
@@ -60,9 +61,11 @@ public class MainActivity extends BaseUiLoadActivity {
 
     private ActViewHolder mActViewHolder;
 
+    public static ArrayMap<String, String> cachedFileMetaDataMaps; // url//objectId
+
     AdapterPresenter<FileMetaData> adapterPresenter;
     LyricPresenter mLyricPresenter;
-    NativePlayer mNativePlayer;
+    BasePlayer basePlayer;
 
     public static final String RQ_AUDIO = Manifest.permission.RECORD_AUDIO;
     private Subscription seachFileSubscri;
@@ -98,40 +101,27 @@ public class MainActivity extends BaseUiLoadActivity {
         void onClick(View view) {
             final int viewId = view.getId();
 
-            int playIndex = mNativePlayer.getCuttentPlayIndex();
-            boolean loadComplete = mNativePlayer.isResouceLoadComplete();
+            int playIndex = basePlayer.getCurrentPlayIndex();
+            boolean loadComplete = basePlayer.isResouceLoadComplete();
             FileMetaData metaData = null;
 
             switch (viewId) {
 
                 case R.id.playIv:
 
-                    if (!loadComplete) {
-                        metaData = adapterPresenter.getItem(cachePlayIndex);
-                        mNativePlayer.playMp3Music(metaData.getUri());
-                        return;
-                    }
-                    mNativePlayer.playMusic(playIndex);
+                    basePlayer.playMusic(playIndex);
                     break;
 
                 case R.id.playNextIv:
 
-                    if (!loadComplete) {
-                        if (cachePlayIndex + 1 > adapterPresenter.getCount())
-                            cachePlayIndex++;
-                        mNativePlayer.pauseCurrPlayMusic();
-                        metaData = adapterPresenter.getItem(cachePlayIndex);
-                        mNativePlayer.playMp3Music(metaData.getUri());
-                        return;
-                    }
-                    mNativePlayer.playerNext();
+                    basePlayer.playNext();
 
                     break;
 
                 case R.id.bottomRL:
 
                     if (playIndex >= 0 && loadComplete)
-                        metaData = mNativePlayer.getMetaData(playIndex);
+                        metaData = basePlayer.getMetaData(playIndex);
                     if (!loadComplete)
                         metaData = adapterPresenter.getItem(cachePlayIndex);
 
@@ -188,8 +178,8 @@ public class MainActivity extends BaseUiLoadActivity {
             return false;
         });
 
-        mNativePlayer = NativePlayer.getInstance();
-        mLyricPresenter = mNativePlayer.getLyricPresenter();
+        basePlayer = new PlayerLoader().getPlayer(PlayerLoader.PlayerType.EXOPLAYER);
+        mLyricPresenter = basePlayer.getLyricPresenter();
     }
 
     @Override
@@ -207,7 +197,7 @@ public class MainActivity extends BaseUiLoadActivity {
                     int pos = holder.getAdapterPosition();
                     holder.setText(R.id.playIndexTv, String.valueOf(pos + 1));
 
-                    if (mNativePlayer.getCuttentPlayIndex() == pos) {
+                    if (basePlayer.getCurrentPlayIndex() == pos) {
                         holder.setVisible(R.id.icPlayerOnIv, true);
                         holder.setVisible(R.id.playIndexTv, false);
                     } else {
@@ -224,34 +214,39 @@ public class MainActivity extends BaseUiLoadActivity {
 
         adapter.setOnItemClickListener((viewGroup, view, fileMetaData, integer) -> {
 
-            /*mNativePlayer.playMusic(integer);
+            AudioPlayer.getInstance().playMusic(integer);
             setPlayUiWithData(fileMetaData);
             adapter.notifyDataSetChanged();
 
-            if (!mNativePlayer.isResouceLoadComplete())
-                cachePlayIndex = integer;*/
-
-            AudioPlayer.getInstance().exoPlayMp3(Uri.fromFile(new File(fileMetaData.getUri())));
+            if (!basePlayer.isResouceLoadComplete())
+                cachePlayIndex = integer;
 
         });
 
 
-        List<FileMetaData> metaDatas = mNativePlayer.getFileMetaDatas();
-        mNativePlayer.addPlayerCallback(playerCallback);
+        List<FileMetaData> metaDatas = basePlayer.getFileMetaDatas();
+        basePlayer.addPlayerCallback(playerCallback);
         if (!CollectionUtils.isEmpty(metaDatas)) {
-            adapterPresenter.addAllItem(mNativePlayer.getFileMetaDatas());
+            adapterPresenter.addAllItem(basePlayer.getFileMetaDatas());
             setPlayUiWithData(metaDatas.get(0));
         } else {
             BmobQuery<FileMetaData> dataQuery = new BmobQuery<>();
-            dataQuery.setCachePolicy(BmobQuery.CachePolicy.CACHE_ELSE_NETWORK);
+            dataQuery.setCachePolicy(BmobQuery.CachePolicy.NETWORK_ELSE_CACHE);
             dataQuery.addWhereEqualTo("phoneid", FileMetaData.getUuid());
             dataQuery.findObjects(new FindListener<FileMetaData>() {
                 @Override
                 public void done(List<FileMetaData> list, BmobException e) {
                     if (e == null && CollectionUtils.isNotEmpty(list)) {
                         // notice: 2016/12/5 先取缓存的数据
-                        if (CollectionUtils.isEmpty(mNativePlayer.getFileMetaDatas()))
+                        if (CollectionUtils.isEmpty(basePlayer.getFileMetaDatas()))
                             adapterPresenter.addAllItem(list);
+                        if (cachedFileMetaDataMaps == null)
+                            cachedFileMetaDataMaps = new ArrayMap<>();
+                        else cachedFileMetaDataMaps.clear();
+                        // notice: 缓存到用户的objectId
+                        for (FileMetaData metaData : list) {
+                            cachedFileMetaDataMaps.put(metaData.getUri(), metaData.getObjectId());
+                        }
                     }
                 }
             });
@@ -264,7 +259,7 @@ public class MainActivity extends BaseUiLoadActivity {
         @Override
         public void onPlayState(int state) {
             setPlayImageState(state);
-            int selectIndex = mNativePlayer.getCuttentPlayIndex();
+            int selectIndex = basePlayer.getCurrentPlayIndex();
             setPlayUiWithData(adapterPresenter.getItem(selectIndex));
         }
 
@@ -278,7 +273,7 @@ public class MainActivity extends BaseUiLoadActivity {
         public void onLoadResourceComplete() {
             if (adapterPresenter.getCount() > 0)
                 adapterPresenter.clear();
-            adapterPresenter.addAllItem(mNativePlayer.getFileMetaDatas());
+            adapterPresenter.addAllItem(basePlayer.getFileMetaDatas());
             setPlayUiWithData(adapterPresenter.getItem(0));
         }
     };
@@ -328,7 +323,8 @@ public class MainActivity extends BaseUiLoadActivity {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         if (grantResults.length == 1 && requestCode == 2) {
             if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                NativePlayer.getInstance().initAudio();
+                if (basePlayer instanceof NativePlayer)
+                    NativePlayer.getInstance().initAudio();
             }
         } else if (grantResults.length == 1 && requestCode == 3) {
             //noinspection StatementWithEmptyBody
@@ -347,7 +343,7 @@ public class MainActivity extends BaseUiLoadActivity {
     private void startToScanMusic() {
         //不用每次搜索,浪费资源
         RxUiUtils.unsubscribe(seachFileSubscri);
-        seachFileSubscri = mNativePlayer.getSearchFileObserable()
+        seachFileSubscri = basePlayer.getSearchFileObserable()
                 .subscribe(mp3FileList ->
                         RxUiUtils.postDelayedRxOnMain(10L, () -> {
                             int size = mp3FileList != null ? mp3FileList.size() : 0;
@@ -374,8 +370,8 @@ public class MainActivity extends BaseUiLoadActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        mNativePlayer.removePlayerCallback(playerCallback);
-        NativePlayer.getInstance().shutDown();
+        basePlayer.removePlayerCallback(playerCallback);
+        basePlayer.release();
     }
 
 }

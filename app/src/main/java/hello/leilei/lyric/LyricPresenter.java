@@ -2,10 +2,11 @@ package hello.leilei.lyric;
 
 import android.media.MediaMetadataRetriever;
 import android.support.annotation.NonNull;
+import android.support.v4.util.ArrayMap;
 import android.text.TextUtils;
 import android.util.Base64;
 
-import com.google.android.exoplayer2.video.MediaCodecVideoRenderer;
+import com.google.android.exoplayer2.SimpleExoPlayer;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -13,14 +14,16 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 
 import cn.bmob.v3.BmobBatch;
+import cn.bmob.v3.BmobQuery;
 import cn.bmob.v3.datatype.BatchResult;
 import cn.bmob.v3.exception.BmobException;
 import cn.bmob.v3.listener.QueryListListener;
 import es.dmoral.prefs.Prefs;
+import hello.leilei.MainActivity;
 import hello.leilei.MainApplication;
+import hello.leilei.base.audioplayer.AudioPlayer;
 import hello.leilei.base.http.HttpManager;
 import hello.leilei.base.http.KugouLyriService;
 import hello.leilei.base.http.LyricApiService;
@@ -151,6 +154,14 @@ public class LyricPresenter {
         return filePath;
     }
 
+    String getObjectId(String uri) {
+        ArrayMap<String, String> dataMaps = MainActivity.cachedFileMetaDataMaps;
+        if (!CollectionUtils.isEmpty(dataMaps)) {
+            return dataMaps.get(uri);
+        }
+        return null;
+    }
+
     public Observable<List<FileMetaData>> getMetaDataAction(List<String> fileUris) {
         return Observable.fromCallable((Func0<List<FileMetaData>>) () -> getMeteData(fileUris))
                 .map(fileMetaDatas -> {
@@ -158,19 +169,36 @@ public class LyricPresenter {
                     /*long metaDataTime = Prefs.with(MainApplication.getApp()).readLong("pushFileMetaDataTime", 0L);
                     if (System.currentTimeMillis() - metaDataTime >= 30 * 60 * 1000) {*/
                     Timber.d("inset bach fileMata to Bmob ....");
-                    new BmobBatch().insertBatch(new ArrayList<>(fileMetaDatas))
-                            .doBatch(new QueryListListener<BatchResult>() {
-                                @Override
-                                public void done(List<BatchResult> list, BmobException e) {
-                                    if (CollectionUtils.isNotEmpty(list)) {
-                                        Timber.d("FileMetaData\t" + list.size() + "个数据批量添加成功");
-                                        Prefs.with(MainApplication.getApp())
-                                                .writeLong("pushFileMetaDataTime", System.currentTimeMillis());
-                                    }
-                                    if (e != null)
-                                        Timber.e(e.getMessage(), e);
-                                }
-                            });
+
+                    boolean update = false;
+                    if (CollectionUtils.isNotEmpty(fileMetaDatas)) {
+                        for (FileMetaData metaData : fileMetaDatas) {
+                            String obejctId = getObjectId(metaData.getUri());
+                            if (!TextUtils.isEmpty(obejctId)) {
+                                metaData.setObjectId(obejctId);
+                                update = true;
+                            }
+                        }
+                    }
+
+                    BmobBatch bmobBatch = new BmobBatch();
+                    if (!update)
+                        bmobBatch.insertBatch(new ArrayList<>(fileMetaDatas));
+                    else
+                        bmobBatch.updateBatch(new ArrayList<>(fileMetaDatas));
+                    final boolean _update = update;
+                    bmobBatch.doBatch(new QueryListListener<BatchResult>() {
+                        @Override
+                        public void done(List<BatchResult> list, BmobException e) {
+                            if (CollectionUtils.isNotEmpty(list)) {
+                                Timber.d("FileMetaData\t" + list.size() + "个数据批量" + (_update ? "更新" : "新增") + "成功");
+                                Prefs.with(MainApplication.getApp())
+                                        .writeLong("pushFileMetaDataTime", System.currentTimeMillis());
+                            }
+                            if (e != null)
+                                Timber.e(e.getMessage(), e);
+                        }
+                    });
                     //}
                     return fileMetaDatas;
                 })
@@ -203,6 +231,15 @@ public class LyricPresenter {
         } finally {
             Timber.d("finish getMeteDatas ");
         }
+    }
+
+    private FileMetaData getMetaDataWithFfmpeg() {
+
+
+        SimpleExoPlayer exoPlayer = AudioPlayer.getInstance().getExoPlayer();
+        exoPlayer.setId3Output(metadata -> {
+        });
+        return null;
     }
 
     private FileMetaData getMetaDataForFile(MediaMetadataRetriever metaRetriver, String fileUri) {

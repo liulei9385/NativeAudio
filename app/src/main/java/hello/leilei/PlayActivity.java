@@ -19,8 +19,10 @@ import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
 import hello.leilei.base.BaseUiLoadActivity;
+import hello.leilei.base.audioplayer.BasePlayer;
 import hello.leilei.base.audioplayer.IPlayerCallback;
 import hello.leilei.base.audioplayer.NativePlayer;
+import hello.leilei.base.audioplayer.PlayerLoader;
 import hello.leilei.base.listener.SimpleSeekbarChangeListener;
 import hello.leilei.lyric.LyricPresenter;
 import hello.leilei.lyric.LyricView;
@@ -64,7 +66,7 @@ public class PlayActivity extends BaseUiLoadActivity {
     LyricPresenter mLyricPresenter;
     NativeAudio.OnPlayOverListener onPlayOverListener;
 
-    NativePlayer mNativePlayer;
+    BasePlayer basePlayer;
 
     public static void start(Context context, String songName, long duration, String title) {
         Intent starter = new Intent(context, PlayActivity.class);
@@ -81,7 +83,7 @@ public class PlayActivity extends BaseUiLoadActivity {
         ButterKnife.bind(this);
         onPlayOverListener = () -> RxUiUtils.unsubscribe(updateLyricSubscri);
         NativeAudio.getInstance().addPlayOverListener(onPlayOverListener);
-        mNativePlayer = NativePlayer.getInstance();
+        basePlayer = new PlayerLoader().getPlayer(PlayerLoader.PlayerType.EXOPLAYER);
     }
 
     @Override
@@ -98,7 +100,7 @@ public class PlayActivity extends BaseUiLoadActivity {
         musicSeekbar.setProgress(0);
         musicSeekbar.setMax(NativePlayer.SEEKBAR_MAX);
 
-        mNativePlayer.addPlayerCallback(callback);
+        basePlayer.addPlayerCallback(callback);
 
         musicSeekbar.setOnSeekBarChangeListener(
                 new SimpleSeekbarChangeListener() {
@@ -107,7 +109,7 @@ public class PlayActivity extends BaseUiLoadActivity {
                         if (!fromUser) return;
                         RxUiUtils.postDelayedOnBg(20L, () -> {
 
-                            mNativePlayer.enableProgressChange(false);
+                            basePlayer.enableProgressChange(false);
 
                             long dutration = NativeAudio.getDutration();
                             if (dutration <= 0) return;
@@ -117,7 +119,7 @@ public class PlayActivity extends BaseUiLoadActivity {
                             if (success) {
                                 Timber.d("NativeAudio.setPostion " + milisecond + "success");
                             }
-                            mNativePlayer.enableProgressChange(true);
+                            basePlayer.enableProgressChange(true);
 
                         });
                     }
@@ -160,15 +162,15 @@ public class PlayActivity extends BaseUiLoadActivity {
         switch (viewId) {
 
             case R.id.media_play:
-                mNativePlayer.playMusic(mNativePlayer.getCuttentPlayIndex());
+                basePlayer.playMusic(basePlayer.getCurrentPlayIndex());
                 break;
 
             case R.id.play_next:
-                mNativePlayer.playerNext();
+                basePlayer.playNext();
                 break;
 
             case R.id.play_previous:
-                mNativePlayer.playPrevious();
+                basePlayer.playPrevious();
                 break;
         }
     }
@@ -207,7 +209,7 @@ public class PlayActivity extends BaseUiLoadActivity {
     protected void onDestroy() {
         super.onDestroy();
         RxUiUtils.unsubscribe(updateLyricSubscri);
-        mNativePlayer.removePlayerCallback(callback);
+        basePlayer.removePlayerCallback(callback);
         if (onPlayOverListener != null)
             NativeAudio.getInstance().removePlayOverListener(onPlayOverListener);
     }

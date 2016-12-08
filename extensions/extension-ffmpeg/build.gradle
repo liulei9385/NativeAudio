@@ -8,11 +8,19 @@ android {
     defaultConfig {
         minSdkVersion 15
         targetSdkVersion 24
+
+        /*externalNativeBuild {
+            ndkBuild {
+                //path 'src/main/jni/Android.mk'
+                abiFilters "armeabi-v7a"
+                arguments "NDK_APPLICATION_MK:=Application.mk"
+            }
+        }*/
     }
 
     sourceSets.main {
-        jniLibs.srcDir 'src/main/jniLibs'
-        jni.srcDirs = [] // Disable the automatic ndk-build call by Android Studio.
+        jniLibs.srcDir 'src/main/libs'
+        jni.srcDirs = []
     }
 
     buildTypes {
@@ -21,6 +29,14 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
+
+    /*externalNativeBuild {
+        ndkBuild {
+            //path 'src/main/jni/Android.mk'
+            abiFilters "armeabi-v7a"
+            arguments "NDK_APPLICATION_MK:=Application.mk"
+        }
+    }*/
 }
 
 dependencies {
