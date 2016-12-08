@@ -2,6 +2,7 @@ package hello.leilei;
 
 import android.os.Bundle;
 import android.support.annotation.Nullable;
+import android.support.v4.util.ArrayMap;
 import android.support.v7.app.AppCompatActivity;
 import android.widget.ImageView;
 
@@ -19,8 +20,10 @@ import cn.bmob.v3.BmobUser;
 import cn.bmob.v3.datatype.BmobFile;
 import cn.bmob.v3.exception.BmobException;
 import cn.bmob.v3.listener.FindListener;
+import hello.leilei.base.audioplayer.FileMetaDataSave;
 import hello.leilei.base.audioplayer.MusicFileSearch;
 import hello.leilei.base.audioplayer.NativePlayer;
+import hello.leilei.model.FileMetaData;
 import hello.leilei.model.SplashImgBean;
 import hello.leilei.utils.CollectionUtils;
 import hello.leilei.utils.RxUiUtils;
@@ -41,6 +44,8 @@ public class SplashActivity extends AppCompatActivity {
         StatusBarUtils.hideStatusBar(this);
 
         setContentView(R.layout.activity_splash);
+
+        getMusicOnlineRecord();
         MusicFileSearch.getInstace().startToSearchMp3File();
 
         ImageView splashIv = ButterKnife.findById(this, R.id.splashImgV);
@@ -95,6 +100,22 @@ public class SplashActivity extends AppCompatActivity {
         }
         overridePendingTransition(R.anim.ui_slide_in_right, R.anim.ui_slide_out_left);
         finish();
+    }
+
+    private void getMusicOnlineRecord() {
+        BmobQuery<FileMetaData> dataQuery = new BmobQuery<>();
+        dataQuery.setCachePolicy(BmobQuery.CachePolicy.NETWORK_ELSE_CACHE);
+        dataQuery.addWhereEqualTo("phoneid", FileMetaData.getUuid());
+        dataQuery.findObjects(new FindListener<FileMetaData>() {
+            @Override
+            public void done(List<FileMetaData> list, BmobException e) {
+                if (e == null && CollectionUtils.isNotEmpty(list)) {
+                    // notice: 2016/12/5 先取缓存的数据
+                    // notice: 缓存到用户的objectId
+                    FileMetaDataSave.saveFileMetaDatas(list);
+                }
+            }
+        });
     }
 
 }

@@ -30,7 +30,6 @@ import hello.leilei.nativeaudio.NativeAudio;
 import hello.leilei.utils.RxUiUtils;
 import rx.Observable;
 import rx.Subscription;
-import timber.log.Timber;
 
 /**
  * Created by liulei
@@ -111,14 +110,11 @@ public class PlayActivity extends BaseUiLoadActivity {
 
                             basePlayer.enableProgressChange(false);
 
-                            long dutration = NativeAudio.getDutration();
+                            long dutration = basePlayer.getDuration();
                             if (dutration <= 0) return;
 
                             long milisecond = (long) (dutration * (userProgress / (float) seekBar.getMax()));
-                            boolean success = NativeAudio.setPostion(milisecond);
-                            if (success) {
-                                Timber.d("NativeAudio.setPostion " + milisecond + "success");
-                            }
+                            basePlayer.setPosition(milisecond);
                             basePlayer.enableProgressChange(true);
 
                         });

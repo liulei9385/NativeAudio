@@ -49,13 +49,18 @@ public class NativePlayer extends BasePlayer {
     }
 
     @Override
-    protected long getDuration() {
+    public long getDuration() {
         return NativePlayer.getInstance().getDuration();
     }
 
     @Override
-    protected long getPostion() {
+    public long getPostion() {
         return NativePlayer.getInstance().getPostion();
+    }
+
+    @Override
+    public void setPosition(long millisecond) {
+        NativeAudio.setPostion(millisecond);
     }
 
     @Override

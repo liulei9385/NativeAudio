@@ -120,9 +120,11 @@ public abstract class BasePlayer {
         }
     }
 
-    protected abstract long getDuration();
+    public abstract long getDuration();
 
-    protected abstract long getPostion();
+    public abstract long getPostion();
+
+    public abstract void setPosition(long millisecond);
 
     public void changePlayProgress() {
         RxUiUtils.unsubscribe(changeProgressSubscri);

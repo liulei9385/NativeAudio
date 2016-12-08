@@ -17,6 +17,7 @@ import com.google.android.exoplayer2.upstream.FileDataSourceFactory;
 import java.io.File;
 
 import hello.leilei.MainApplication;
+import hello.leilei.base.listener.SimpleEventListener;
 import hello.leilei.model.FileMetaData;
 
 /**
@@ -30,6 +31,8 @@ public class AudioPlayer extends BasePlayer {
 
     private static AudioPlayer player;
     private SimpleExoPlayer exoPlayer;
+
+    boolean isInit = false;
 
     public SimpleExoPlayer getExoPlayer() {
         return exoPlayer;
@@ -50,15 +53,24 @@ public class AudioPlayer extends BasePlayer {
     private void initPlayer() {
         Handler eventHanlder = new Handler();
         DefaultTrackSelector trackSelector = new DefaultTrackSelector(eventHanlder);
-        if (exoPlayer != null) {
-            exoPlayer.release();
-        }
         exoPlayer = ExoPlayerFactory.newSimpleInstance(MainApplication.getApp(),
                 trackSelector, new DefaultLoadControl());
-
+        exoPlayer.addListener(new SimpleEventListener() {
+            @Override
+            public void onPlayerStateChanged(boolean playWhenReady, int playbackState) {
+                if (playbackState == ExoPlayer.STATE_ENDED) {
+                    playNext();
+                }
+            }
+        });
+        isInit = true;
     }
 
     private void exoPlayMp3(String fileUri) {
+
+        if (!isInit)
+            initPlayer();
+
         Uri localFileUri = Uri.fromFile(new File(fileUri));
         ExtractorMediaSource mediaSource = new ExtractorMediaSource(localFileUri,
                 new FileDataSourceFactory(), () -> new Extractor[]{
@@ -66,7 +78,7 @@ public class AudioPlayer extends BasePlayer {
         }, null, null);
         exoPlayer.prepare(mediaSource);
         exoPlayer.setPlayWhenReady(true);
-        setPlayerState(PLAYED);
+        setPlayerState(ExoPlayer.STATE_READY);
         changePlayProgress();
     }
 
@@ -87,7 +99,7 @@ public class AudioPlayer extends BasePlayer {
         if (state == ExoPlayer.STATE_READY) {
             boolean isReady = exoPlayer.getPlayWhenReady();
             exoPlayer.setPlayWhenReady(!isReady);
-            setPlayerState(isReady ? PAUSED : PLAYED);
+            setPlayerState(state);
         } else if (state == ExoPlayer.STATE_ENDED) {
             playNext();
         }
@@ -120,16 +132,29 @@ public class AudioPlayer extends BasePlayer {
         if (exoPlayer != null) {
             exoPlayer.setPlayWhenReady(false);
             exoPlayer.release();
+            exoPlayer = null;
+            isInit = false;
         }
     }
 
     @Override
-    protected long getDuration() {
+    public long getDuration() {
+        if (exoPlayer == null)
+            initPlayer();
         return exoPlayer.getDuration();
     }
 
     @Override
-    protected long getPostion() {
+    public long getPostion() {
+        if (exoPlayer == null)
+            initPlayer();
         return exoPlayer.getCurrentPosition();
+    }
+
+    @Override
+    public void setPosition(long millisecond) {
+        if (exoPlayer == null)
+            initPlayer();
+        exoPlayer.seekTo(millisecond);
     }
 }

@@ -9,7 +9,6 @@ import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.NavigationView;
 import android.support.v4.app.ActivityCompat;
-import android.support.v4.util.ArrayMap;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.ActionBarDrawerToggle;
@@ -31,12 +30,10 @@ import java.util.List;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
-import cn.bmob.v3.BmobQuery;
 import cn.bmob.v3.BmobUser;
-import cn.bmob.v3.exception.BmobException;
-import cn.bmob.v3.listener.FindListener;
 import hello.leilei.base.BaseUiLoadActivity;
 import hello.leilei.base.audioplayer.BasePlayer;
+import hello.leilei.base.audioplayer.FileMetaDataSave;
 import hello.leilei.base.audioplayer.IPlayerCallback;
 import hello.leilei.base.audioplayer.MusicFileSearch;
 import hello.leilei.base.audioplayer.NativePlayer;
@@ -61,8 +58,6 @@ import rx.observables.ConnectableObservable;
 public class MainActivity extends BaseUiLoadActivity {
 
     private ActViewHolder mActViewHolder;
-
-    public static ArrayMap<String, String> cachedFileMetaDataMaps; // url//objectId
 
     AdapterPresenter<FileMetaData> adapterPresenter;
     LyricPresenter mLyricPresenter;
@@ -230,26 +225,10 @@ public class MainActivity extends BaseUiLoadActivity {
             adapterPresenter.addAllItem(basePlayer.getFileMetaDatas());
             setPlayUiWithData(metaDatas.get(0));
         } else {
-            BmobQuery<FileMetaData> dataQuery = new BmobQuery<>();
-            dataQuery.setCachePolicy(BmobQuery.CachePolicy.NETWORK_ELSE_CACHE);
-            dataQuery.addWhereEqualTo("phoneid", FileMetaData.getUuid());
-            dataQuery.findObjects(new FindListener<FileMetaData>() {
-                @Override
-                public void done(List<FileMetaData> list, BmobException e) {
-                    if (e == null && CollectionUtils.isNotEmpty(list)) {
-                        // notice: 2016/12/5 先取缓存的数据
-                        if (CollectionUtils.isEmpty(basePlayer.getFileMetaDatas()))
-                            adapterPresenter.addAllItem(list);
-                        if (cachedFileMetaDataMaps == null)
-                            cachedFileMetaDataMaps = new ArrayMap<>();
-                        else cachedFileMetaDataMaps.clear();
-                        // notice: 缓存到用户的objectId
-                        for (FileMetaData metaData : list) {
-                            cachedFileMetaDataMaps.put(metaData.getUri(), metaData.getObjectId());
-                        }
-                    }
-                }
-            });
+            List<FileMetaData> dataList = FileMetaDataSave.fileMetaDataList;
+            if (CollectionUtils.isNotEmpty(dataList)) {
+                adapterPresenter.addAllItem(dataList);
+            }
         }
 
         mActViewHolder.mProgressBar.setMax(NativePlayer.SEEKBAR_MAX / 2);

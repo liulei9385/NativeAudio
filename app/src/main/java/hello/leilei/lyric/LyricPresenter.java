@@ -24,6 +24,7 @@ import es.dmoral.prefs.Prefs;
 import hello.leilei.MainActivity;
 import hello.leilei.MainApplication;
 import hello.leilei.base.audioplayer.AudioPlayer;
+import hello.leilei.base.audioplayer.FileMetaDataSave;
 import hello.leilei.base.http.HttpManager;
 import hello.leilei.base.http.KugouLyriService;
 import hello.leilei.base.http.LyricApiService;
@@ -154,14 +155,6 @@ public class LyricPresenter {
         return filePath;
     }
 
-    String getObjectId(String uri) {
-        ArrayMap<String, String> dataMaps = MainActivity.cachedFileMetaDataMaps;
-        if (!CollectionUtils.isEmpty(dataMaps)) {
-            return dataMaps.get(uri);
-        }
-        return null;
-    }
-
     public Observable<List<FileMetaData>> getMetaDataAction(List<String> fileUris) {
         return Observable.fromCallable((Func0<List<FileMetaData>>) () -> getMeteData(fileUris))
                 .map(fileMetaDatas -> {
@@ -173,7 +166,7 @@ public class LyricPresenter {
                     boolean update = false;
                     if (CollectionUtils.isNotEmpty(fileMetaDatas)) {
                         for (FileMetaData metaData : fileMetaDatas) {
-                            String obejctId = getObjectId(metaData.getUri());
+                            String obejctId = FileMetaDataSave.getObjectId(metaData.getUri());
                             if (!TextUtils.isEmpty(obejctId)) {
                                 metaData.setObjectId(obejctId);
                                 update = true;
@@ -231,15 +224,6 @@ public class LyricPresenter {
         } finally {
             Timber.d("finish getMeteDatas ");
         }
-    }
-
-    private FileMetaData getMetaDataWithFfmpeg() {
-
-
-        SimpleExoPlayer exoPlayer = AudioPlayer.getInstance().getExoPlayer();
-        exoPlayer.setId3Output(metadata -> {
-        });
-        return null;
     }
 
     private FileMetaData getMetaDataForFile(MediaMetadataRetriever metaRetriver, String fileUri) {
