@@ -1,20 +1,16 @@
 package hello.leilei.base.audioplayer;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import hello.leilei.lyric.LyricPresenter;
 import hello.leilei.model.FileMetaData;
-import hello.leilei.nativeaudio.FileFind;
 import hello.leilei.utils.CollectionUtils;
-import hello.leilei.utils.FileUtils;
 import hello.leilei.utils.RxUiUtils;
 import rx.Observable;
 import rx.Subscription;
 import rx.functions.Func0;
-import rx.observables.ConnectableObservable;
 
 /**
  * Created by liulei
@@ -29,8 +25,6 @@ public abstract class BasePlayer {
     public static final int ERROR = -1;
 
     private List<FileMetaData> fileMetaDatas;
-    private ConnectableObservable<List<String>> searchFileObser;
-    private List<String> mp3FileList;
     protected LyricPresenter mLyricPresenter;
 
     protected int currentPlayIndex;
@@ -70,10 +64,6 @@ public abstract class BasePlayer {
             for (IPlayerCallback callback : mPlayerCallbacks)
                 callback.onLoadResourceComplete();
         }
-    }
-
-    public List<String> getMp3FileList() {
-        return mp3FileList;
     }
 
     protected int getCount() {
@@ -120,39 +110,6 @@ public abstract class BasePlayer {
             this.position = position;
             this.percent = percent;
         }
-    }
-
-    public ConnectableObservable<List<String>> getSearchFileObserable() {
-        if (searchFileObser == null)
-            searchFileObser = Observable.fromCallable((Func0<List<String>>) () -> {
-                File sdDir = FileUtils.getExternalSdDir();
-                List<String> mp3FileList = null;
-                if (sdDir != null)
-                    mp3FileList = FileFind.getMp3FileFromPath(sdDir.getPath());
-                return mp3FileList;
-            })//
-                    .compose(RxUiUtils.applySchedulers())
-                    .publish();
-        return searchFileObser;
-    }
-
-    public void startToSearchMp3File() {
-
-        getSearchFileObserable()
-                .flatMap(mp3FileList -> {
-                    this.mp3FileList = mp3FileList;
-                    if (CollectionUtils.isNotEmpty(mp3FileList))
-                        return mLyricPresenter.getMetaDataAction(mp3FileList);
-                    return Observable.error(new IllegalArgumentException("list was null"));
-                })
-                .subscribe(datas -> {
-
-                    NativePlayer.getInstance().setFileMetaDatas(datas);
-
-                }, Throwable::printStackTrace);
-
-        searchFileObser.connect();
-        searchFileObser.refCount();
     }
 
     public void enableProgressChange(boolean isEnable) {

@@ -36,9 +36,9 @@ import cn.bmob.v3.BmobUser;
 import cn.bmob.v3.exception.BmobException;
 import cn.bmob.v3.listener.FindListener;
 import hello.leilei.base.BaseUiLoadActivity;
-import hello.leilei.base.audioplayer.AudioPlayer;
 import hello.leilei.base.audioplayer.BasePlayer;
 import hello.leilei.base.audioplayer.IPlayerCallback;
+import hello.leilei.base.audioplayer.MusicFileSearch;
 import hello.leilei.base.audioplayer.NativePlayer;
 import hello.leilei.base.audioplayer.PlayerLoader;
 import hello.leilei.base.decoration.LinearDividerItemDecoration;
@@ -51,6 +51,7 @@ import hello.leilei.utils.DensityUtils;
 import hello.leilei.utils.NumberUtils;
 import hello.leilei.utils.RxUiUtils;
 import rx.Subscription;
+import rx.observables.ConnectableObservable;
 
 /**
  * Created by liulei on 16-3-18.
@@ -146,8 +147,7 @@ public class MainActivity extends BaseUiLoadActivity {
         //  解决 splashAct 过度到 MainAct后的status 有偏移的问题。
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
             View decorView = getWindow().getDecorView();
-            decorView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-                    | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN);
+            decorView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE);
         }
 
         super.onCreate(savedInstanceState);
@@ -214,7 +214,7 @@ public class MainActivity extends BaseUiLoadActivity {
 
         adapter.setOnItemClickListener((viewGroup, view, fileMetaData, integer) -> {
 
-            AudioPlayer.getInstance().playMusic(integer);
+            basePlayer.playMusic(integer);
             setPlayUiWithData(fileMetaData);
             adapter.notifyDataSetChanged();
 
@@ -343,12 +343,14 @@ public class MainActivity extends BaseUiLoadActivity {
     private void startToScanMusic() {
         //不用每次搜索,浪费资源
         RxUiUtils.unsubscribe(seachFileSubscri);
-        seachFileSubscri = basePlayer.getSearchFileObserable()
-                .subscribe(mp3FileList ->
-                        RxUiUtils.postDelayedRxOnMain(10L, () -> {
-                            int size = mp3FileList != null ? mp3FileList.size() : 0;
-                            showSToast("扫描到" + size + "个文件");
-                        }), Throwable::printStackTrace);
+        ConnectableObservable<List<String>> fileObserable = MusicFileSearch.getInstace()
+                .getSearchFileObserable();
+        seachFileSubscri = fileObserable.subscribe(mp3FileList ->
+                RxUiUtils.postDelayedRxOnMain(10L, () -> {
+                    int size = mp3FileList != null ? mp3FileList.size() : 0;
+                    showSToast("扫描到" + size + "个文件");
+                }), Throwable::printStackTrace);
+        fileObserable.connect();
     }
 
     @Override

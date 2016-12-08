@@ -19,6 +19,7 @@ import cn.bmob.v3.BmobUser;
 import cn.bmob.v3.datatype.BmobFile;
 import cn.bmob.v3.exception.BmobException;
 import cn.bmob.v3.listener.FindListener;
+import hello.leilei.base.audioplayer.MusicFileSearch;
 import hello.leilei.base.audioplayer.NativePlayer;
 import hello.leilei.model.SplashImgBean;
 import hello.leilei.utils.CollectionUtils;
@@ -40,8 +41,7 @@ public class SplashActivity extends AppCompatActivity {
         StatusBarUtils.hideStatusBar(this);
 
         setContentView(R.layout.activity_splash);
-        NativePlayer.getInstance()
-                .startToSearchMp3File();
+        MusicFileSearch.getInstace().startToSearchMp3File();
 
         ImageView splashIv = ButterKnife.findById(this, R.id.splashImgV);
 

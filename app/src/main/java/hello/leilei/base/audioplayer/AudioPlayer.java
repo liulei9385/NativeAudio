@@ -72,7 +72,8 @@ public class AudioPlayer extends BasePlayer {
 
     @Override
     public void playMusic(int selectIndex) {
-        if (selectIndex >= getCount()) return;
+
+        if (selectIndex < 0 || selectIndex >= getCount()) return;
 
         if (currentPlayIndex != selectIndex) {
             currentPlayIndex = selectIndex;
