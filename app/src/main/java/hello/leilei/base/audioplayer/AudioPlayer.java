@@ -125,13 +125,13 @@ public class AudioPlayer extends BasePlayer {
     // 播放下一首
     @Override
     public void playNext() {
-        playMusic(++selectIndex);
+        playMusic(++currentPlayIndex);
     }
 
     // 播放上一首
     @Override
     public void playPrevious() {
-        playMusic(--selectIndex);
+        playMusic(--currentPlayIndex);
     }
 
     public void release() {

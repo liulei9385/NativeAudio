@@ -107,8 +107,7 @@ dependencies {
 
     compile project(':library')
 
-    //compile(name: 'bmoblibrary-release-1.0.0', ext: 'aar')
-    //compile project(':bmoblibrary')
+    compile 'cn.zhaiyifan:lyricview:1.0.1'
     compile 'me.leilei.learncode:bmoblibrary:0.0.5-SNAPSHOT@aar'
     compile "${rootProject.ext.exoplayer}"
     compile "${rootProject.ext.exoplayer_okhttp}"

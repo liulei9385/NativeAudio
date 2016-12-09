@@ -13,11 +13,12 @@ import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
-import java.util.concurrent.TimeUnit;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
+import cn.zhaiyifan.lyric.LyricUtils;
+import cn.zhaiyifan.lyric.widget.LyricView;
 import hello.leilei.base.BaseUiLoadActivity;
 import hello.leilei.base.audioplayer.BasePlayer;
 import hello.leilei.base.audioplayer.IPlayerCallback;
@@ -25,10 +26,8 @@ import hello.leilei.base.audioplayer.NativePlayer;
 import hello.leilei.base.audioplayer.PlayerLoader;
 import hello.leilei.base.listener.SimpleSeekbarChangeListener;
 import hello.leilei.lyric.LyricPresenter;
-import hello.leilei.lyric.LyricView;
 import hello.leilei.nativeaudio.NativeAudio;
 import hello.leilei.utils.RxUiUtils;
-import rx.Observable;
 import rx.Subscription;
 
 /**
@@ -176,17 +175,9 @@ public class PlayActivity extends BaseUiLoadActivity {
     @Override
     protected void obtainData() {
         mLyricPresenter.downloadLyricWithKugou(songName, filePath -> {
-            lyricV.initLyricFile(new File(filePath));
-            updateLyricSubscri = Observable.interval(0L, 120L, TimeUnit.MILLISECONDS)
-                    .compose(RxUiUtils.applySchedulers())
-                    .subscribe(aLong -> {
-
-                        long duration = basePlayer.getDuration();
-                        long position = basePlayer.getPostion();
-                        lyricV.updateLyrics(position, duration);
-
-                    }, Throwable::printStackTrace);
-
+            lyricV.setLyric(LyricUtils.parseLyric(new File(filePath), "UTF-8"));
+            lyricV.setLyricIndex(0);
+            lyricV.play();
         });
 
     }
