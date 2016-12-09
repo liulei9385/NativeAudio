@@ -2,6 +2,7 @@ package hello.leilei;
 
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.view.View;
@@ -17,8 +18,6 @@ import java.util.Locale;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
-import cn.zhaiyifan.lyric.LyricUtils;
-import cn.zhaiyifan.lyric.widget.LyricView;
 import hello.leilei.base.BaseUiLoadActivity;
 import hello.leilei.base.audioplayer.BasePlayer;
 import hello.leilei.base.audioplayer.IPlayerCallback;
@@ -26,6 +25,7 @@ import hello.leilei.base.audioplayer.NativePlayer;
 import hello.leilei.base.audioplayer.PlayerLoader;
 import hello.leilei.base.listener.SimpleSeekbarChangeListener;
 import hello.leilei.lyric.LyricPresenter;
+import hello.leilei.lyric.LyricView;
 import hello.leilei.nativeaudio.NativeAudio;
 import hello.leilei.utils.RxUiUtils;
 import rx.Subscription;
@@ -94,6 +94,15 @@ public class PlayActivity extends BaseUiLoadActivity {
 
         if (!TextUtils.isEmpty(songName))
             setToolbarTitle(songName);
+
+        // config for lyricView
+        lyricV.setLineSpace(12.0f);
+        lyricV.setTextSize(15.0f);
+        lyricV.setHighLightTextColor(Color.parseColor("#4FC5C7"));
+        lyricV.setOnPlayerClickListener((progress, content) -> {
+            // donothings
+            basePlayer.setPosition(basePlayer.getDuration() * progress);
+        });
 
         musicSeekbar.setProgress(0);
         musicSeekbar.setMax(NativePlayer.SEEKBAR_MAX);
@@ -174,11 +183,8 @@ public class PlayActivity extends BaseUiLoadActivity {
 
     @Override
     protected void obtainData() {
-        mLyricPresenter.downloadLyricWithKugou(songName, filePath -> {
-            lyricV.setLyric(LyricUtils.parseLyric(new File(filePath), "UTF-8"));
-            lyricV.setLyricIndex(0);
-            lyricV.play();
-        });
+        mLyricPresenter.downloadLyricWithKugou(songName, filePath ->
+                lyricV.setLyricFile(new File(filePath), "UTF-8"));
 
     }
 

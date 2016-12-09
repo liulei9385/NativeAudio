@@ -22,11 +22,16 @@
             tools:background="#4000ff00"
             tools:ignore="UnknownIdInLayout" />-->
 
-        <!--<cn.zhaiyifan.lyricview.widget.LyricView-->
-        <cn.zhaiyifan.lyric.widget.LyricView
+        <hello.leilei.lyric.LyricView
             android:id="@+id/lyricV"
             android:layout_width="match_parent"
             android:layout_height="match_parent" />
+
+        <!--<cn.zhaiyifan.lyricview.widget.LyricView-->
+        <!--<cn.zhaiyifan.lyric.widget.LyricView
+            android:id="@+id/lyricV"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />-->
 
     </LinearLayout>
 
