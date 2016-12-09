@@ -19,9 +19,7 @@ public class HttpManager {
     private static HttpManager mHttpManager;
     private OkHttpClient mHttpClient;
     private Retrofit lyricRetrofit;
-    private Retrofit kugouRetrofit;
-    private LyricApiService mLyricApiService;
-    private KugouLyriService mKugouLyriService;
+    private NewKugouLryicService mNewKugouLryicService;
 
     public static HttpManager getInstance() {
         if (mHttpManager == null) {
@@ -33,16 +31,17 @@ public class HttpManager {
         return mHttpManager;
     }
 
-    public LyricApiService getLyricApiService() {
-        if (mLyricApiService == null)
-            mLyricApiService = provideGsonCachedRestAdapter().create(LyricApiService.class);
-        return mLyricApiService;
-    }
-
-    public KugouLyriService getKugouLyricApiService() {
-        if (mKugouLyriService == null)
-            mKugouLyriService = provideKugouGsonCachedRestAdapter().create(KugouLyriService.class);
-        return mKugouLyriService;
+    public NewKugouLryicService getNewKugouLyricApiService() {
+        if (mNewKugouLryicService == null) {
+            Retrofit build = new Retrofit.Builder()
+                    .baseUrl(ApiConfig.NEW_KUGOU_BASE_URL)
+                    .addConverterFactory(GsonConverterFactory.create())
+                    .addCallAdapterFactory(RxJavaCallAdapterFactory.create())
+                    .client(getCachedOkHttpClient())
+                    .build();
+            mNewKugouLryicService = build.create(NewKugouLryicService.class);
+        }
+        return mNewKugouLryicService;
     }
 
     public Retrofit provideGsonCachedRestAdapter() {
@@ -54,17 +53,6 @@ public class HttpManager {
                     .client(getCachedOkHttpClient())
                     .build();
         return lyricRetrofit;
-    }
-
-    public Retrofit provideKugouGsonCachedRestAdapter() {
-        if (kugouRetrofit == null)
-            kugouRetrofit = new Retrofit.Builder()
-                    .baseUrl(ApiConfig.KUGOU_BASE_URL)
-                    .addConverterFactory(GsonConverterFactory.create())
-                    .addCallAdapterFactory(RxJavaCallAdapterFactory.create())
-                    .client(getCachedOkHttpClient())
-                    .build();
-        return kugouRetrofit;
     }
 
     public OkHttpClient getCachedOkHttpClient() {

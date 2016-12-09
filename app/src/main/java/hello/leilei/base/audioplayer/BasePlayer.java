@@ -27,7 +27,7 @@ public abstract class BasePlayer {
     private List<FileMetaData> fileMetaDatas;
     protected LyricPresenter mLyricPresenter;
 
-    protected int currentPlayIndex;
+    protected int currentPlayIndex = -1;
     protected int selectIndex;
 
     protected List<IPlayerCallback> mPlayerCallbacks;

@@ -1,1 +1,3 @@
-1.歌词文件未作缓存处理
+1.jni错误 逍遥安卓 4.4
+12-09 14:13:03.179 9391-10191/hello.leilei E/dalvikvm: dlopen("/data/app-lib/hello.leilei-2/libffmpeg.so") failed: dlopen failed: cannot locate symbol "avcodec_free_context" referenced by "libffmpeg.so"...
+2.android x86 获取不到专辑图片

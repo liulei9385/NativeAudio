@@ -7,7 +7,7 @@ package hello.leilei.base.http;
  */
 
 public class ApiConfig {
-
     public static final String GECIME_BASE_URL = "http://gecimi.com/api/";
     public static final String KUGOU_BASE_URL = "http://lyrics.kugou.com/";
+    public static final String NEW_KUGOU_BASE_URL = "http://mobilecdn.kugou.com/api/v3/";
 }

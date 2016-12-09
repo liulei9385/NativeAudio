@@ -115,7 +115,7 @@ public class PlayActivity extends BaseUiLoadActivity {
 
                             long milisecond = (long) (dutration * (userProgress / (float) seekBar.getMax()));
                             basePlayer.setPosition(milisecond);
-                            basePlayer.enableProgressChange(true);
+                            RxUiUtils.postDelayedOnBg(200L, () -> basePlayer.enableProgressChange(true));
 
                         });
                     }
@@ -175,7 +175,7 @@ public class PlayActivity extends BaseUiLoadActivity {
 
     @Override
     protected void obtainData() {
-        mLyricPresenter.downloadLyricWithKugou(songName, duration, filePath -> {
+        mLyricPresenter.downloadLyricWithKugou(songName, filePath -> {
             lyricV.initLyricFile(new File(filePath));
             updateLyricSubscri = Observable.interval(0L, 120L, TimeUnit.MILLISECONDS)
                     .compose(RxUiUtils.applySchedulers())

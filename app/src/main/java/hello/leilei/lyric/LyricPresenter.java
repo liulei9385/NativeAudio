@@ -6,27 +6,20 @@ import android.media.MediaMetadataRetriever;
 import android.provider.MediaStore;
 import android.support.annotation.NonNull;
 import android.text.TextUtils;
-import android.util.Base64;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
 
 import hello.leilei.MainApplication;
 import hello.leilei.base.http.HttpManager;
-import hello.leilei.base.http.KugouLyriService;
-import hello.leilei.base.http.LyricApiService;
+import hello.leilei.base.http.NewKugouLryicService;
 import hello.leilei.model.FileMetaData;
-import hello.leilei.model.KugouLyricPath;
-import hello.leilei.model.KugouLyricRecord;
-import hello.leilei.model.LyricRecordBean;
+import hello.leilei.model.NewKugouLyricRecord;
 import hello.leilei.utils.CollectionUtils;
 import hello.leilei.utils.FileUtils;
 import hello.leilei.utils.Md5Utils;
-import hello.leilei.utils.OkioUtils;
 import hello.leilei.utils.RxUiUtils;
 import okhttp3.ResponseBody;
 import okio.BufferedSink;
@@ -46,79 +39,40 @@ import timber.log.Timber;
  */
 public class LyricPresenter {
 
-    private LyricApiService lyricApiService;
-    private KugouLyriService mKugouLyriService;
+    private NewKugouLryicService mNewKugouLryicService;
 
     public LyricPresenter() {
-        this.lyricApiService = HttpManager.getInstance().getLyricApiService();
-        this.mKugouLyriService = HttpManager.getInstance().getKugouLyricApiService();
+        HttpManager httpManager = HttpManager.getInstance();
+        this.mNewKugouLryicService = httpManager.getNewKugouLyricApiService();
     }
 
-    /**
-     * 下载歌词文件
-     */
-    public void downloadLyric(final String songName, @NonNull Action1<String> filePathAction) {
+    public void downloadLyricWithKugou(String songName, @NonNull Action1<String> filePathAction) {
 
-        // 先查看文件是否有内容呀
-        File lyricFile = FileUtils.createSdCacheFile(MainApplication.getApp(), songName + ".lrc");
-        try {
-
-            FileInputStream fileInputStream = new FileInputStream(lyricFile);
-            int available = fileInputStream.available();
-            fileInputStream.close();
-            if (available > 0L) {
-                filePathAction.call(lyricFile.getPath());
-                return;
-            }
-        } catch (IOException ex) {
-            ex.printStackTrace();
+        String finalPath = FileUtils.getExternalCacheDir(MainApplication.getApp()).getPath()
+                + File.separator + songName + ".lrc";
+        if (new File(finalPath).exists()) {
+            filePathAction.call(finalPath);
+            Timber.d("downloadLyricWithKugou 从文件缓存获取");
+            return;
         }
 
-        lyricApiService.getLyricRecord(songName)
-                .flatMap(downloadLyricFile(songName, lyricFile))
-                .compose(RxUiUtils.applySchedulers())
-                .subscribe(filePathAction, Throwable::printStackTrace);
-
-    }
-
-    public void downloadLyricWithKugou(final String songName, long duration, @NonNull Action1<String> filePathAction) {
-        // 先查看文件是否有内容呀
-        File lyricFile = FileUtils.createSdCacheFile(MainApplication.getApp(), songName + ".lrc");
-        mKugouLyriService.getLryicRecord(songName, duration)
-                .flatMap(new Func1<KugouLyricRecord, Observable<KugouLyricPath>>() {
+        this.mNewKugouLryicService.searchMusic(songName)
+                .flatMap(new Func1<NewKugouLyricRecord, Observable<ResponseBody>>() {
                     @Override
-                    public Observable<KugouLyricPath> call(KugouLyricRecord kugouLyricRecord) {
-                        List<KugouLyricRecord.CandidatesBean> candidates = kugouLyricRecord.candidates;
-                        if (CollectionUtils.isNotEmpty(candidates)) {
-                            KugouLyricRecord.CandidatesBean candidatesBean = candidates.get(0);
-                            return mKugouLyriService.downloadLryic(candidatesBean.id, candidatesBean.accesskey);
+                    public Observable<ResponseBody> call(NewKugouLyricRecord newKugouLyricRecord) {
+                        int status = newKugouLyricRecord.status;
+                        if (status == 1) {
+                            List<NewKugouLyricRecord.DataBean.InfoBean> infos = newKugouLyricRecord.data.info;
+                            if (CollectionUtils.isNotEmpty(infos)) {
+                                NewKugouLyricRecord.DataBean.InfoBean infoBean = infos.get(0);
+                                return mNewKugouLryicService.searchLyric(songName, infoBean.hash, infoBean.duration * 1000 + "");
+                            }
                         }
-                        return null;
+                        return Observable.empty();
                     }
-                })
-                .flatMap(kugouLyricPath -> {
-                    if (kugouLyricPath != null) {
-                        String conent = kugouLyricPath.content;
-                        byte[] lyricBytes = Base64.decode(conent.getBytes(Charset.defaultCharset()), Base64.NO_WRAP);
-                        OkioUtils.writeByteToFile(lyricFile, lyricBytes);
-                        return Observable.just(lyricFile.getPath());
-                    }
-                    return null;
-                })
+                }).map(responseBody -> doDownloadAction(responseBody, new File(finalPath)))
                 .compose(RxUiUtils.applySchedulers())
                 .subscribe(filePathAction, Throwable::printStackTrace);
-    }
-
-    private Func1<LyricRecordBean, Observable<String>> downloadLyricFile(String songName, File lyricFile) {
-        return lyricRecordBean -> {
-            String path = lyricRecordBean.getFirstDownloadPath();
-            if (!TextUtils.isEmpty(path)) {
-
-                return lyricApiService.downloadFileWithDynamicUrlSync(path)
-                        .map(responseBody -> doDownloadAction(responseBody, lyricFile));
-            }
-            return Observable.error(new IllegalArgumentException("path was null," + songName + "was valid"));
-        };
     }
 
     @NonNull

@@ -15,12 +15,13 @@ import okio.Okio;
  */
 public class OkioUtils {
 
-    public static void writeByteToFile(File mFile, byte[] bytes) {
-        if (bytes == null) return;
+    public static boolean writeByteToFile(File mFile, byte[] bytes) {
+        if (bytes == null) return false;
         BufferedSink bufferedSink = null;
         try {
             bufferedSink = Okio.buffer(Okio.sink(mFile));
             bufferedSink.write(bytes);
+            return true;
         } catch (IOException e) {
             e.printStackTrace();
         } finally {
@@ -31,6 +32,7 @@ public class OkioUtils {
                 e.printStackTrace();
             }
         }
+        return false;
     }
 
 }
