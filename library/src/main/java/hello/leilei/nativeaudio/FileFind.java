@@ -1,5 +1,6 @@
 package hello.leilei.nativeaudio;
 
+import java.io.UnsupportedEncodingException;
 import java.util.List;
 
 /**
@@ -19,5 +20,13 @@ public class FileFind {
 
     public static synchronized List<String> getMp3FileFromPath(String dirPath) {
         return searchMp3File(dirPath);
+    }
+
+    public static String newStringUtf8(byte[] input) {
+        try {
+            return new String(input, "UTF-8");
+        } catch (UnsupportedEncodingException e) {
+            return ""; //JSTRING_CONVERT_FAIL
+        }
     }
 }
