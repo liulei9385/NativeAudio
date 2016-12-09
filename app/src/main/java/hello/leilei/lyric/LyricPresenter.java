@@ -1,12 +1,12 @@
 package hello.leilei.lyric;
 
+import android.content.ContentResolver;
+import android.database.Cursor;
 import android.media.MediaMetadataRetriever;
+import android.provider.MediaStore;
 import android.support.annotation.NonNull;
-import android.support.v4.util.ArrayMap;
 import android.text.TextUtils;
 import android.util.Base64;
-
-import com.google.android.exoplayer2.SimpleExoPlayer;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -15,16 +15,7 @@ import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
 
-import cn.bmob.v3.BmobBatch;
-import cn.bmob.v3.BmobQuery;
-import cn.bmob.v3.datatype.BatchResult;
-import cn.bmob.v3.exception.BmobException;
-import cn.bmob.v3.listener.QueryListListener;
-import es.dmoral.prefs.Prefs;
-import hello.leilei.MainActivity;
 import hello.leilei.MainApplication;
-import hello.leilei.base.audioplayer.AudioPlayer;
-import hello.leilei.base.audioplayer.FileMetaDataSave;
 import hello.leilei.base.http.HttpManager;
 import hello.leilei.base.http.KugouLyriService;
 import hello.leilei.base.http.LyricApiService;
@@ -157,44 +148,6 @@ public class LyricPresenter {
 
     public Observable<List<FileMetaData>> getMetaDataAction(List<String> fileUris) {
         return Observable.fromCallable((Func0<List<FileMetaData>>) () -> getMeteData(fileUris))
-                .map(fileMetaDatas -> {
-                    // notice: 2016/12/5 插入数据到bmob云中..
-                    /*long metaDataTime = Prefs.with(MainApplication.getApp()).readLong("pushFileMetaDataTime", 0L);
-                    if (System.currentTimeMillis() - metaDataTime >= 30 * 60 * 1000) {*/
-                    Timber.d("inset bach fileMata to Bmob ....");
-
-                    boolean update = false;
-                    if (CollectionUtils.isNotEmpty(fileMetaDatas)) {
-                        for (FileMetaData metaData : fileMetaDatas) {
-                            String obejctId = FileMetaDataSave.getObjectId(metaData.getUri());
-                            if (!TextUtils.isEmpty(obejctId)) {
-                                metaData.setObjectId(obejctId);
-                                update = true;
-                            }
-                        }
-                    }
-
-                    BmobBatch bmobBatch = new BmobBatch();
-                    if (!update)
-                        bmobBatch.insertBatch(new ArrayList<>(fileMetaDatas));
-                    else
-                        bmobBatch.updateBatch(new ArrayList<>(fileMetaDatas));
-                    final boolean _update = update;
-                    bmobBatch.doBatch(new QueryListListener<BatchResult>() {
-                        @Override
-                        public void done(List<BatchResult> list, BmobException e) {
-                            if (CollectionUtils.isNotEmpty(list)) {
-                                Timber.d("FileMetaData\t" + list.size() + "个数据批量" + (_update ? "更新" : "新增") + "成功");
-                                Prefs.with(MainApplication.getApp())
-                                        .writeLong("pushFileMetaDataTime", System.currentTimeMillis());
-                            }
-                            if (e != null)
-                                Timber.e(e.getMessage(), e);
-                        }
-                    });
-                    //}
-                    return fileMetaDatas;
-                })
                 .compose(RxUiUtils.applySchedulers());
     }
 
@@ -226,6 +179,55 @@ public class LyricPresenter {
         }
     }
 
+    public List<FileMetaData> getMetaDataWithResolver() {
+        ContentResolver contentResolver = MainApplication.getApp().getContentResolver();
+        Cursor cursor = contentResolver.query(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
+                null, null, null, MediaStore.Audio.Media.DEFAULT_SORT_ORDER);
+        if (cursor != null) {
+            cursor.moveToFirst();
+            List<FileMetaData> fileMetaDataList = new ArrayList<>();
+            MediaMetadataRetriever metaRetriver = new MediaMetadataRetriever();
+            while (cursor.moveToNext()) {
+
+                FileMetaData metaData = new FileMetaData();
+                int id = cursor.getInt(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media._ID));
+                String tilte = cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.TITLE));
+                //歌曲的专辑名：MediaStore.Audio.Media.ALBUM
+                String album = cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM));
+                //歌曲的歌手名：MediaStore.Audio.Media.ARTIST
+                String artist = cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ARTIST));
+                //歌曲文件的路径：MediaStore.Audio.Media.DATA
+                String url = cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DATA));
+                //歌曲的总播放时长：MediaStore.Audio.Media.DURATION
+                long duration = cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DURATION));
+                //歌曲文件的大小：MediaStore.Audio.Media.SIZE
+                long size = cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.SIZE));
+
+                metaData.author = tilte;
+                metaData.duration = duration + "";
+                metaData.album = album;
+                metaData.artlist = artist;
+                metaData.title = tilte;
+                metaData.phoneid = FileMetaData.getUuid();
+                metaData.setUri(url);
+                fileMetaDataList.add(metaData);
+
+                metaRetriver.setDataSource(url);
+                //notice 缓存图片，并生成一个对应的uri供glide加载
+                File sdCacheFile = FileUtils.createSdCacheFile(MainApplication.getApp(),
+                        getArtThumbName(metaData));
+                if (sdCacheFile == null || sdCacheFile.getUsableSpace() < 0L)
+                    cacheArtThumbForFile(metaData, metaRetriver.getEmbeddedPicture());
+
+
+            }
+
+            cursor.close();
+            return fileMetaDataList;
+        }
+        return null;
+    }
+
     private FileMetaData getMetaDataForFile(MediaMetadataRetriever metaRetriver, String fileUri) {
 
         try {
@@ -244,7 +246,10 @@ public class LyricPresenter {
             metaData.phoneid = FileMetaData.getUuid();
 
             //notice 缓存图片，并生成一个对应的uri供glide加载
-            cacheArtThumbForFile(metaData, metaRetriver.getEmbeddedPicture());
+            File sdCacheFile = FileUtils.createSdCacheFile(MainApplication.getApp(),
+                    getArtThumbName(metaData));
+            if (sdCacheFile == null || sdCacheFile.getUsableSpace() < 0L)
+                cacheArtThumbForFile(metaData, metaRetriver.getEmbeddedPicture());
 
             return metaData;
 
@@ -256,6 +261,7 @@ public class LyricPresenter {
     }
 
     private void cacheArtThumbForFile(FileMetaData metaData, byte[] artByte) {
+        // notice: 2016/12/9 检查文件是否存在
         if (artByte == null) return;
         File sdCacheFile = FileUtils.createSdCacheFile(MainApplication.getApp(),
                 getArtThumbName(metaData));

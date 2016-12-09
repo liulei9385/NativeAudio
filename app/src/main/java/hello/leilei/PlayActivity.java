@@ -177,12 +177,12 @@ public class PlayActivity extends BaseUiLoadActivity {
     protected void obtainData() {
         mLyricPresenter.downloadLyricWithKugou(songName, duration, filePath -> {
             lyricV.initLyricFile(new File(filePath));
-            updateLyricSubscri = Observable.interval(20L, 120L, TimeUnit.MILLISECONDS)
+            updateLyricSubscri = Observable.interval(0L, 120L, TimeUnit.MILLISECONDS)
                     .compose(RxUiUtils.applySchedulers())
                     .subscribe(aLong -> {
 
-                        long duration = NativeAudio.getDutration();
-                        long position = NativeAudio.getPostion();
+                        long duration = basePlayer.getDuration();
+                        long position = basePlayer.getPostion();
                         lyricV.updateLyrics(position, duration);
 
                     }, Throwable::printStackTrace);

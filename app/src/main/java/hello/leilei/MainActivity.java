@@ -49,6 +49,7 @@ import hello.leilei.utils.NumberUtils;
 import hello.leilei.utils.RxUiUtils;
 import rx.Subscription;
 import rx.observables.ConnectableObservable;
+import timber.log.Timber;
 
 /**
  * Created by liulei on 16-3-18.
@@ -216,16 +217,19 @@ public class MainActivity extends BaseUiLoadActivity {
             if (!basePlayer.isResouceLoadComplete())
                 cachePlayIndex = integer;
 
+            Timber.d("playingTitle##" + fileMetaData.title);
+
         });
 
 
+        // notice: 2016/12/9 如果缓存没有，则从文件缓存中获取
         List<FileMetaData> metaDatas = basePlayer.getFileMetaDatas();
         basePlayer.addPlayerCallback(playerCallback);
         if (!CollectionUtils.isEmpty(metaDatas)) {
             adapterPresenter.addAllItem(basePlayer.getFileMetaDatas());
             setPlayUiWithData(metaDatas.get(0));
         } else {
-            List<FileMetaData> dataList = FileMetaDataSave.fileMetaDataList;
+            List<FileMetaData> dataList = FileMetaDataSave.getInstance().fileMetaDataList;
             if (CollectionUtils.isNotEmpty(dataList)) {
                 adapterPresenter.addAllItem(dataList);
             }
@@ -352,6 +356,7 @@ public class MainActivity extends BaseUiLoadActivity {
     protected void onDestroy() {
         super.onDestroy();
         basePlayer.removePlayerCallback(playerCallback);
+        basePlayer.enableProgressChange(false);
         basePlayer.release();
     }
 

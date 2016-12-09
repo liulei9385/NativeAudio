@@ -1,7 +1,6 @@
 #include <jni.h>
 #include <stddef.h>
 #include <malloc.h>
-#include <string.h>
 #include "include/file-find.h"
 
 void Java_hello_leilei_nativeaudio_FileFind_scanDir(JNIEnv *env, jclass clazz, jstring path) {
@@ -42,6 +41,7 @@ jobject Java_hello_leilei_nativeaudio_FileFind_searchMp3File(
     }
 
     free(array);
+    free(filetemp);
     (*env)->ReleaseStringUTFChars(env, path, pathUtf8);
 
     return (*env)->NewGlobalRef(env, list);

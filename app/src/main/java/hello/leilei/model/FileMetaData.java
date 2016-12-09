@@ -6,7 +6,6 @@ import android.util.Base64;
 import java.nio.charset.Charset;
 import java.util.UUID;
 
-import cn.bmob.v3.BmobObject;
 import es.dmoral.prefs.Prefs;
 import hello.leilei.MainApplication;
 
@@ -15,7 +14,7 @@ import hello.leilei.MainApplication;
  * DATE: 2016/12/2
  * TIME: 8:54
  */
-public class FileMetaData extends BmobObject {
+public class FileMetaData {
 
     private String uri;  //本地文件路径
 

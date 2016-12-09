@@ -1,5 +1,6 @@
 package hello.leilei.base.audioplayer;
 
+import android.annotation.SuppressLint;
 import android.net.Uri;
 import android.os.Handler;
 
@@ -19,6 +20,8 @@ import java.io.File;
 import hello.leilei.MainApplication;
 import hello.leilei.base.listener.SimpleEventListener;
 import hello.leilei.model.FileMetaData;
+import hello.leilei.utils.RxUiUtils;
+import timber.log.Timber;
 
 /**
  * Created by liulei
@@ -66,10 +69,8 @@ public class AudioPlayer extends BasePlayer {
         isInit = true;
     }
 
+    @SuppressLint("BinaryOperationInTimber")
     private void exoPlayMp3(String fileUri) {
-
-        if (!isInit)
-            initPlayer();
 
         Uri localFileUri = Uri.fromFile(new File(fileUri));
         ExtractorMediaSource mediaSource = new ExtractorMediaSource(localFileUri,
@@ -80,10 +81,15 @@ public class AudioPlayer extends BasePlayer {
         exoPlayer.setPlayWhenReady(true);
         setPlayerState(ExoPlayer.STATE_READY);
         changePlayProgress();
+        RxUiUtils.postDelayedOnBg(1000L, () -> Timber.d("fileUrl##" + fileUri + "###duration=" +
+                exoPlayer.getDuration()));
     }
 
     @Override
     public void playMusic(int selectIndex) {
+
+        if (!isInit)
+            initPlayer();
 
         if (selectIndex < 0 || selectIndex >= getCount()) return;
 

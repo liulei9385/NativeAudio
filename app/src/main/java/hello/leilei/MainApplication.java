@@ -4,6 +4,8 @@ import android.app.Application;
 
 import cn.bmob.v3.Bmob;
 import cn.bmob.v3.BmobConfig;
+import hello.leilei.base.audioplayer.FileMetaDataSave;
+import hello.leilei.model.FileMetaData;
 import timber.log.Timber;
 
 /**
@@ -43,6 +45,8 @@ public class MainApplication extends Application {
                 .setFileExpiration(2500)
                 .build();
         Bmob.initialize(config);
+
+        FileMetaDataSave.getInstance().init();
 
     }
 }
