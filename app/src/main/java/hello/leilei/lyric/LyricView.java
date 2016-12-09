@@ -424,14 +424,10 @@ public class LyricView extends View {
         float to = Math.min(Math.max(0, (mScrollY - distance)), (mLineCount - 1) * mLineHeight);   // 综合考虑边界问题后得出的实际滑行距离
 
         mFlingAnimator = ValueAnimator.ofFloat(mScrollY, to);
-        mFlingAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
-
-            @Override
-            public void onAnimationUpdate(ValueAnimator animation) {
-                mScrollY = (float) animation.getAnimatedValue();
-                measureCurrentLine();
-                invalidateView();
-            }
+        mFlingAnimator.addUpdateListener(animation -> {
+            mScrollY = (float) animation.getAnimatedValue();
+            measureCurrentLine();
+            invalidateView();
         });
 
         mFlingAnimator.addListener(new AnimatorListenerAdapter() {

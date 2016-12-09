@@ -14,6 +14,7 @@ import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
+import java.util.concurrent.TimeUnit;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -28,6 +29,7 @@ import hello.leilei.lyric.LyricPresenter;
 import hello.leilei.lyric.LyricView;
 import hello.leilei.nativeaudio.NativeAudio;
 import hello.leilei.utils.RxUiUtils;
+import rx.Observable;
 import rx.Subscription;
 
 /**
@@ -62,7 +64,6 @@ public class PlayActivity extends BaseUiLoadActivity {
     private String title;
     private long duration = 0L;
     LyricPresenter mLyricPresenter;
-    NativeAudio.OnPlayOverListener onPlayOverListener;
 
     BasePlayer basePlayer;
 
@@ -79,8 +80,6 @@ public class PlayActivity extends BaseUiLoadActivity {
         super.onCreate(savedInstanceState);
         mLyricPresenter = new LyricPresenter();
         ButterKnife.bind(this);
-        onPlayOverListener = () -> RxUiUtils.unsubscribe(updateLyricSubscri);
-        NativeAudio.getInstance().addPlayOverListener(onPlayOverListener);
         basePlayer = new PlayerLoader().getPlayer(PlayerLoader.PlayerType.EXOPLAYER);
     }
 
@@ -98,11 +97,13 @@ public class PlayActivity extends BaseUiLoadActivity {
         // config for lyricView
         lyricV.setLineSpace(12.0f);
         lyricV.setTextSize(15.0f);
-        lyricV.setHighLightTextColor(Color.parseColor("#4FC5C7"));
+        lyricV.setHighLightTextColor(Color.parseColor("#ff92bc27"));
         lyricV.setOnPlayerClickListener((progress, content) -> {
             // donothings
             basePlayer.setPosition(basePlayer.getDuration() * progress);
         });
+
+        refreshLyric();
 
         musicSeekbar.setProgress(0);
         musicSeekbar.setMax(NativePlayer.SEEKBAR_MAX);
@@ -128,6 +129,18 @@ public class PlayActivity extends BaseUiLoadActivity {
                         });
                     }
                 });
+    }
+
+
+    Subscription refreshLyricSubscri;
+
+    private void refreshLyric() {
+        RxUiUtils.unsubscribe(refreshLyricSubscri);
+        refreshLyricSubscri = Observable.interval(0L, 120L, TimeUnit.MILLISECONDS)
+                .compose(RxUiUtils.applySchedulers())
+                .subscribe(aLong -> {
+                    lyricV.setCurrentTimeMillis(basePlayer.getPostion());
+                }, Throwable::printStackTrace);
     }
 
     IPlayerCallback callback = new IPlayerCallback() {
@@ -179,12 +192,12 @@ public class PlayActivity extends BaseUiLoadActivity {
         }
     }
 
-    Subscription updateLyricSubscri;
-
     @Override
     protected void obtainData() {
-        mLyricPresenter.downloadLyricWithKugou(songName, filePath ->
-                lyricV.setLyricFile(new File(filePath), "UTF-8"));
+        mLyricPresenter.downloadLyricWithKugou(songName, filePath -> {
+            lyricV.setLyricFile(new File(filePath), "UTF-8");
+            lyricV.setPlayable(true);
+        });
 
     }
 
@@ -201,10 +214,8 @@ public class PlayActivity extends BaseUiLoadActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        RxUiUtils.unsubscribe(updateLyricSubscri);
+        RxUiUtils.unsubscribe(refreshLyricSubscri);
         basePlayer.removePlayerCallback(callback);
-        if (onPlayOverListener != null)
-            NativeAudio.getInstance().removePlayOverListener(onPlayOverListener);
     }
 
 }
