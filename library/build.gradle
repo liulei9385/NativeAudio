@@ -3,11 +3,11 @@ apply plugin: 'com.android.library'
 android {
 
     compileSdkVersion 24
-    buildToolsVersion "24.0.3"
+    buildToolsVersion "25.0.2"
 
     defaultConfig {
         minSdkVersion 15
-        targetSdkVersion 24
+        targetSdkVersion 25
         ndk {
             //'x86', 'x86_64',
             abiFilters 'armeabi', 'armeabi-v7a','x86'

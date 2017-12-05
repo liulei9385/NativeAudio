@@ -6,7 +6,7 @@ buildscript {
     }
     dependencies {
 
-        classpath 'com.android.tools.build:gradle:2.2.3'
+        classpath 'com.android.tools.build:gradle:2.3.3'
         classpath 'com.neenbedankt.gradle.plugins:android-apt:1.8'
         classpath 'me.tatarka:gradle-retrolambda:3.4.0'
 
@@ -51,7 +51,7 @@ ext {
     test_runner = 'com.android.support.test:runner:' + runnerVersion
     test_rules = 'com.android.support.test:rules:' + rulesVersion
 
-    support_version = '24.2.1'
+    support_version = '25.3.1'
     support_annotations = 'com.android.support:support-annotations:' + support_version
     support_core_ui = 'com.android.support:support-core-ui:' + support_version
     support_v4 = 'com.android.support:support-v4:' + support_version

@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
@@ -12,10 +13,7 @@ import cn.bmob.v3.BmobUser;
 import cn.bmob.v3.exception.BmobException;
 import cn.bmob.v3.listener.LogInListener;
 import hello.leilei.base.BaseUiLoadActivity;
-import okhttp3.*;
 import timber.log.Timber;
-
-import java.io.IOException;
 
 /**
  * Created by liulei on 2016/11/30.
