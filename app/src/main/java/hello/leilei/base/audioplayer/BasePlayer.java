@@ -128,7 +128,7 @@ public abstract class BasePlayer {
 
     public void changePlayProgress() {
         RxUiUtils.unsubscribe(changeProgressSubscri);
-        changeProgressSubscri = Observable.interval(0L, 500L, TimeUnit.MICROSECONDS)
+        changeProgressSubscri = Observable.interval(0L, 1000L, TimeUnit.MILLISECONDS)
                 .flatMap(aLong -> Observable.fromCallable((Func0<ProgressItem>) () -> {
                     long duration = getDuration();
                     long position = getPostion();

@@ -45,6 +45,7 @@ import hello.leilei.lyric.LyricPresenter;
 import hello.leilei.model.FileMetaData;
 import hello.leilei.utils.CollectionUtils;
 import hello.leilei.utils.DensityUtils;
+import hello.leilei.utils.FileUtils;
 import hello.leilei.utils.NumberUtils;
 import hello.leilei.utils.RxUiUtils;
 import rx.Subscription;
@@ -58,79 +59,43 @@ import timber.log.Timber;
  */
 public class MainActivity extends BaseUiLoadActivity {
 
-    private ActViewHolder mActViewHolder;
-
+    public static final String RQ_AUDIO = Manifest.permission.RECORD_AUDIO;
     AdapterPresenter<FileMetaData> adapterPresenter;
     LyricPresenter mLyricPresenter;
     BasePlayer basePlayer;
+    private ActViewHolder mActViewHolder;
+    IPlayerCallback playerCallback = new IPlayerCallback() {
 
-    public static final String RQ_AUDIO = Manifest.permission.RECORD_AUDIO;
-    private Subscription seachFileSubscri;
+        //float lastPercent;
 
-    private int cachePlayIndex = 0;
-
-    class ActViewHolder {
-
-        @BindView(R.id.playNextIv)
-        ImageView playNextIv;
-        @BindView(R.id.playIv)
-        ImageView playIv;
-
-        @BindView(R.id.titleTv)
-        TextView titleTv;
-        @BindView(R.id.albumTv)
-        TextView albumTv;
-        @BindView(R.id.albumIv)
-        ImageView albumIv;
-
-        @BindView(R.id.recyclerView)
-        RecyclerView mRecyclerView;
-
-        @BindView(R.id.drawerLayout)
-        DrawerLayout mDrawerLayout;
-        @BindView(R.id.naviView)
-        NavigationView mNavigationView;
-
-        @BindView(R.id.progressV)
-        ProgressBar mProgressBar;
-
-        @OnClick({R.id.playNextIv, R.id.playIv, R.id.bottomRL})
-        void onClick(View view) {
-            final int viewId = view.getId();
-
-            int playIndex = basePlayer.getCurrentPlayIndex();
-            boolean loadComplete = basePlayer.isResouceLoadComplete();
-            FileMetaData metaData = null;
-
-            switch (viewId) {
-
-                case R.id.playIv:
-
-                    basePlayer.playMusic(playIndex);
-                    break;
-
-                case R.id.playNextIv:
-
-                    basePlayer.playNext();
-
-                    break;
-
-                case R.id.bottomRL:
-
-                    if (playIndex >= 0 && loadComplete)
-                        metaData = basePlayer.getMetaData(playIndex);
-                    if (!loadComplete)
-                        metaData = adapterPresenter.getItem(cachePlayIndex);
-
-                    if (metaData == null) return;
-                    long parseLong = NumberUtils.safeParseLong(metaData.duration, 0L);
-                    PlayActivity.start(MainActivity.this, metaData.title, parseLong,
-                            metaData.title + "-" + metaData.album);
-
-                    break;
-            }
+        @Override
+        public void onPlayState(int state) {
+            setPlayImageState(state);
+            int selectIndex = basePlayer.getCurrentPlayIndex();
+            setPlayUiWithData(adapterPresenter.getItem(selectIndex));
         }
-    }
+
+        @Override
+        public void onProgressChanged(NativePlayer.ProgressItem mProgressItem) {
+            int max = mActViewHolder.mProgressBar.getMax();
+            mActViewHolder.mProgressBar.setProgress((int) (mProgressItem.percent * max));
+            /*if (mProgressItem.percent - lastPercent >= 0.01) {
+
+                System.out.println("MainActivity.onProgressChanged## " + mProgressItem.percent);
+                lastPercent = mProgressItem.percent;
+            }*/
+        }
+
+        @Override
+        public void onLoadResourceComplete() {
+            if (adapterPresenter.getCount() > 0)
+                adapterPresenter.clear();
+            adapterPresenter.addAllItem(basePlayer.getFileMetaDatas());
+            setPlayUiWithData(adapterPresenter.getItem(0));
+        }
+    };
+    private Subscription seachFileSubscri;
+    private int cachePlayIndex = 0;
 
     public static void start(Context context) {
         Intent starter = new Intent(context, MainActivity.class);
@@ -221,7 +186,6 @@ public class MainActivity extends BaseUiLoadActivity {
 
         });
 
-
         // notice: 2016/12/9 如果缓存没有，则从文件缓存中获取
         List<FileMetaData> metaDatas = basePlayer.getFileMetaDatas();
         basePlayer.addPlayerCallback(playerCallback);
@@ -229,7 +193,7 @@ public class MainActivity extends BaseUiLoadActivity {
             adapterPresenter.addAllItem(basePlayer.getFileMetaDatas());
             setPlayUiWithData(metaDatas.get(0));
         } else {
-            List<FileMetaData> dataList = FileMetaDataSave.getInstance().fileMetaDataList;
+            List<FileMetaData> dataList = FileMetaDataSave.getInstance().getFileMetaDataList();
             if (CollectionUtils.isNotEmpty(dataList)) {
                 adapterPresenter.addAllItem(dataList);
             }
@@ -237,29 +201,6 @@ public class MainActivity extends BaseUiLoadActivity {
 
         mActViewHolder.mProgressBar.setMax(NativePlayer.SEEKBAR_MAX / 2);
     }
-
-    IPlayerCallback playerCallback = new IPlayerCallback() {
-        @Override
-        public void onPlayState(int state) {
-            setPlayImageState(state);
-            int selectIndex = basePlayer.getCurrentPlayIndex();
-            setPlayUiWithData(adapterPresenter.getItem(selectIndex));
-        }
-
-        @Override
-        public void onProgressChanged(NativePlayer.ProgressItem mProgressItem) {
-            int max = mActViewHolder.mProgressBar.getMax();
-            mActViewHolder.mProgressBar.setProgress((int) (mProgressItem.percent * max));
-        }
-
-        @Override
-        public void onLoadResourceComplete() {
-            if (adapterPresenter.getCount() > 0)
-                adapterPresenter.clear();
-            adapterPresenter.addAllItem(basePlayer.getFileMetaDatas());
-            setPlayUiWithData(adapterPresenter.getItem(0));
-        }
-    };
 
     @Override
     protected void obtainData() {
@@ -286,10 +227,12 @@ public class MainActivity extends BaseUiLoadActivity {
         mActViewHolder.albumTv.setText(metaData.album);
 
         String url = mLyricPresenter.getArtThumbUrl(metaData);
-        Glide.with(this)
-                .fromFile()
-                .load(new File(url))
-                .into(mActViewHolder.albumIv);
+        if (FileUtils.getFileSize(url) > 0) {
+            Glide.with(this)
+                    .fromFile()
+                    .load(new File(url))
+                    .into(mActViewHolder.albumIv);
+        }
     }
 
     void setPlayImageState(int state) {
@@ -358,6 +301,70 @@ public class MainActivity extends BaseUiLoadActivity {
         basePlayer.removePlayerCallback(playerCallback);
         basePlayer.enableProgressChange(false);
         basePlayer.release();
+    }
+
+    @SuppressWarnings("WeakerAccess")
+    public class ActViewHolder {
+
+        @BindView(R.id.playNextIv)
+        ImageView playNextIv;
+        @BindView(R.id.playIv)
+        ImageView playIv;
+
+        @BindView(R.id.titleTv)
+        TextView titleTv;
+        @BindView(R.id.albumTv)
+        TextView albumTv;
+        @BindView(R.id.albumIv)
+        ImageView albumIv;
+
+        @BindView(R.id.recyclerView)
+        RecyclerView mRecyclerView;
+
+        @BindView(R.id.drawerLayout)
+        DrawerLayout mDrawerLayout;
+        @BindView(R.id.naviView)
+        NavigationView mNavigationView;
+
+        @BindView(R.id.progressV)
+        ProgressBar mProgressBar;
+
+        @OnClick({R.id.playNextIv, R.id.playIv, R.id.bottomRL})
+        void onClick(View view) {
+            final int viewId = view.getId();
+
+            int playIndex = basePlayer.getCurrentPlayIndex();
+            boolean loadComplete = basePlayer.isResouceLoadComplete();
+            FileMetaData metaData = null;
+
+            switch (viewId) {
+
+                case R.id.playIv:
+
+                    basePlayer.playMusic(playIndex);
+                    break;
+
+                case R.id.playNextIv:
+
+                    basePlayer.playNext();
+
+                    break;
+
+                case R.id.bottomRL:
+
+                    if (playIndex >= 0 && loadComplete)
+                        metaData = basePlayer.getMetaData(playIndex);
+                    if (!loadComplete)
+                        metaData = adapterPresenter.getItem(cachePlayIndex);
+
+                    if (metaData == null) return;
+                    long parseLong = NumberUtils.safeParseLong(metaData.duration, 0L);
+                    PlayActivity.start(MainActivity.this, metaData.title, parseLong,
+                            metaData.title + "-" + metaData.album);
+
+                    break;
+            }
+        }
     }
 
 }

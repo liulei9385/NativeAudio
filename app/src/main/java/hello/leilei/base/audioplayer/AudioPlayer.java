@@ -34,12 +34,7 @@ public class AudioPlayer extends BasePlayer {
 
     private static AudioPlayer player;
     private SimpleExoPlayer exoPlayer;
-
-    boolean isInit = false;
-
-    public SimpleExoPlayer getExoPlayer() {
-        return exoPlayer;
-    }
+    private boolean isInit = false;
 
     public static AudioPlayer getInstance() {
         if (player == null) {
@@ -51,6 +46,10 @@ public class AudioPlayer extends BasePlayer {
             }
         }
         return player;
+    }
+
+    public SimpleExoPlayer getExoPlayer() {
+        return exoPlayer;
     }
 
     private void initPlayer() {
@@ -125,7 +124,7 @@ public class AudioPlayer extends BasePlayer {
     // 播放下一首
     @Override
     public void playNext() {
-        playMusic(++currentPlayIndex);
+        playMusic(currentPlayIndex + 1);
     }
 
     // 播放上一首

@@ -170,7 +170,7 @@ public class LyricPresenter {
                 //notice 缓存图片，并生成一个对应的uri供glide加载
                 File sdCacheFile = FileUtils.createSdCacheFile(MainApplication.getApp(),
                         getArtThumbName(metaData));
-                if (sdCacheFile == null || sdCacheFile.getUsableSpace() < 0L)
+                if (FileUtils.getFileSize(sdCacheFile) <= 0L)
                     cacheArtThumbForFile(metaData, metaRetriver.getEmbeddedPicture());
 
 
@@ -202,7 +202,7 @@ public class LyricPresenter {
             //notice 缓存图片，并生成一个对应的uri供glide加载
             File sdCacheFile = FileUtils.createSdCacheFile(MainApplication.getApp(),
                     getArtThumbName(metaData));
-            if (sdCacheFile == null || sdCacheFile.getUsableSpace() < 0L)
+            if (FileUtils.getFileSize(sdCacheFile) <= 0L)
                 cacheArtThumbForFile(metaData, metaRetriver.getEmbeddedPicture());
 
             return metaData;

@@ -74,16 +74,16 @@ dependencies {
     compile "${rootProject.ext.recyclerview_v7}"
     // design 包括 v4,v7
     compile "${rootProject.ext.support_design}"
-    compile "${rootProject.ext.timber}"
+    compile 'com.jakewharton.timber:timber:4.6.0'
     // rx
     compile "${rootProject.ext.rxjava}"
     compile "${rootProject.ext.rxandroid}"
 
     // okhttp
-    compile "${rootProject.ext.okhttp}"
-    compile "${rootProject.ext.okhttp_interceptor}"
-    compile "${rootProject.ext.okio}"
-    compile "${rootProject.ext.gson}"
+    compile 'com.squareup.okhttp3:okhttp:3.9.1'
+    compile 'com.squareup.okhttp3:logging-interceptor:3.9.1'
+    compile 'com.squareup.okio:okio:1.13.0'
+    compile 'com.google.code.gson:gson:2.8.2'
 
     compile "${rootProject.ext.Prefs}"
 

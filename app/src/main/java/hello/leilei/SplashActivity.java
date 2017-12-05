@@ -23,7 +23,6 @@ import hello.leilei.base.audioplayer.MusicFileSearch;
 import hello.leilei.model.SplashImgBean;
 import hello.leilei.utils.CollectionUtils;
 import hello.leilei.utils.RxUiUtils;
-import hello.leilei.utils.StatusBarUtils;
 import timber.log.Timber;
 
 /**
@@ -37,10 +36,8 @@ public class SplashActivity extends AppCompatActivity {
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        StatusBarUtils.hideStatusBar(this);
-
+        //StatusBarUtils.hideStatusBar(this);
         setContentView(R.layout.activity_splash);
-
         MusicFileSearch.getInstace().startToSearchMp3File();
 
         ImageView splashIv = ButterKnife.findById(this, R.id.splashImgV);

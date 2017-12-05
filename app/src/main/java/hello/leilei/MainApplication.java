@@ -5,7 +5,6 @@ import android.app.Application;
 import cn.bmob.v3.Bmob;
 import cn.bmob.v3.BmobConfig;
 import hello.leilei.base.audioplayer.FileMetaDataSave;
-import hello.leilei.model.FileMetaData;
 import timber.log.Timber;
 
 /**
@@ -24,7 +23,6 @@ public class MainApplication extends Application {
     @Override
     public void onCreate() {
         super.onCreate();
-
         app = this;
 
         if (BuildConfig.DEBUG) {
@@ -47,6 +45,5 @@ public class MainApplication extends Application {
         Bmob.initialize(config);
 
         FileMetaDataSave.getInstance().init();
-
     }
 }

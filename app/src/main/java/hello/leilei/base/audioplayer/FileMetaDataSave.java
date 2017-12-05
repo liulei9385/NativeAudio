@@ -12,9 +12,12 @@ import hello.leilei.utils.CollectionUtils;
 import hello.leilei.utils.FileUtils;
 import hello.leilei.utils.GsonUtils;
 import hello.leilei.utils.RxUiUtils;
+import hello.leilei.utils.ViewUtils;
 import okio.BufferedSink;
 import okio.BufferedSource;
 import okio.Okio;
+import rx.Observable;
+import rx.functions.Actions;
 import timber.log.Timber;
 
 /**
@@ -25,28 +28,39 @@ import timber.log.Timber;
 
 public class FileMetaDataSave {
 
-    private static FileMetaDataSave save;
+    private List<FileMetaData> fileMetaDataList; // url//objectId
 
     public static FileMetaDataSave getInstance() {
-        if (save == null) {
-            synchronized (FileMetaDataSave.class) {
-                if (save == null)
-                    save = new FileMetaDataSave();
-            }
-        }
-        return save;
+        return Sington.INSTANCE.fileMetaDataSave;
+    }
+
+    public void setFileMetaDataList(List<FileMetaData> fileMetaDataList) {
+        this.fileMetaDataList = fileMetaDataList;
+    }
+
+    public List<FileMetaData> getFileMetaDataList() {
+        return fileMetaDataList;
     }
 
     /**
      * 程序第一次初始化
      */
     public void init() {
-        if (CollectionUtils.isEmpty(fileMetaDataList)) {
-            this.fileMetaDataList = getDataFromCache();
+        if (ViewUtils.isRuninMain()) {
+            Observable.fromCallable(() -> {
+
+                if (CollectionUtils.isEmpty(fileMetaDataList)) {
+                    List<FileMetaData> dataFromCache = getDataFromCache();
+                    setFileMetaDataList(dataFromCache);
+                }
+
+                return null;
+            }).compose(RxUiUtils.applySchedulers())
+                    .subscribe(Actions.empty(), RxUiUtils.onErrorDefault());
+        } else {
+            setFileMetaDataList(getDataFromCache());
         }
     }
-
-    public List<FileMetaData> fileMetaDataList; // url//objectId
 
     public List<FileMetaData> getDataFromCache() {
         Context ctx = MainApplication.getApp();
@@ -98,6 +112,15 @@ public class FileMetaDataSave {
             } catch (IOException e) {
                 e.printStackTrace();
             }
+        }
+    }
+
+    private enum Sington {
+        INSTANCE;
+        private FileMetaDataSave fileMetaDataSave;
+
+        Sington() {
+            fileMetaDataSave = new FileMetaDataSave();
         }
     }
 

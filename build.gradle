@@ -94,7 +94,7 @@ ext {
 
     Prefs =  'com.github.GrenderG:Prefs:1.2'
 
-    exoplayer = 'com.google.android.exoplayer:exoplayer:r2.0.4'
-    exoplayer_okhttp = 'com.google.android.exoplayer:extension-okhttp:r2.0.4'
+    exoplayer = 'com.google.android.exoplayer:exoplayer:r2.5.4'
+    exoplayer_okhttp = 'com.google.android.exoplayer:extension-okhttp:r2.5.4'
 
 }

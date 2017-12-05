@@ -1,13 +1,16 @@
 package hello.leilei.utils;
 
 import android.support.annotation.NonNull;
+import android.util.Log;
+
+import java.util.concurrent.TimeUnit;
+
 import rx.Observable;
 import rx.Subscription;
 import rx.android.schedulers.AndroidSchedulers;
 import rx.functions.Action0;
+import rx.functions.Action1;
 import rx.schedulers.Schedulers;
-
-import java.util.concurrent.TimeUnit;
 
 /**
  * Created by liulei on 2016/11/29.
@@ -52,5 +55,14 @@ public class RxUiUtils {
     public static <T> Observable.Transformer<T, T> applySchedulers() {
         return tObservable -> tObservable.subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread());
+    }
+
+    private static final Action1<Throwable> onErrorAction = (Action1<Throwable>) t -> {
+        t.printStackTrace();
+        Log.e("onError", "", t);
+    };
+
+    public static Action1<Throwable> onErrorDefault() {
+        return onErrorAction;
     }
 }
