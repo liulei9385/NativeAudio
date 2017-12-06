@@ -1,10 +1,11 @@
 package hello.leilei;
 
 import android.app.Application;
+import android.util.Log;
 
 import cn.bmob.v3.Bmob;
 import cn.bmob.v3.BmobConfig;
-import hello.leilei.base.audioplayer.FileMetaDataSave;
+import hello.leilei.base.audioplayer.FileMetaDataRepo;
 import timber.log.Timber;
 
 /**
@@ -25,6 +26,8 @@ public class MainApplication extends Application {
         super.onCreate();
         app = this;
 
+        Log.e("MainApplication", "app is launch starting..");
+
         if (BuildConfig.DEBUG) {
             Timber.plant(new Timber.DebugTree());
         } /*else {
@@ -44,6 +47,6 @@ public class MainApplication extends Application {
                 .build();
         Bmob.initialize(config);
 
-        FileMetaDataSave.getInstance().init();
+        FileMetaDataRepo.getInstance().init();
     }
 }

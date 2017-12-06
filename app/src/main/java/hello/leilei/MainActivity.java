@@ -33,7 +33,7 @@ import butterknife.OnClick;
 import cn.bmob.v3.BmobUser;
 import hello.leilei.base.BaseUiLoadActivity;
 import hello.leilei.base.audioplayer.BasePlayer;
-import hello.leilei.base.audioplayer.FileMetaDataSave;
+import hello.leilei.base.audioplayer.FileMetaDataRepo;
 import hello.leilei.base.audioplayer.IPlayerCallback;
 import hello.leilei.base.audioplayer.MusicFileSearch;
 import hello.leilei.base.audioplayer.NativePlayer;
@@ -66,8 +66,6 @@ public class MainActivity extends BaseUiLoadActivity {
     private ActViewHolder mActViewHolder;
     IPlayerCallback playerCallback = new IPlayerCallback() {
 
-        //float lastPercent;
-
         @Override
         public void onPlayState(int state) {
             setPlayImageState(state);
@@ -79,11 +77,6 @@ public class MainActivity extends BaseUiLoadActivity {
         public void onProgressChanged(NativePlayer.ProgressItem mProgressItem) {
             int max = mActViewHolder.mProgressBar.getMax();
             mActViewHolder.mProgressBar.setProgress((int) (mProgressItem.percent * max));
-            /*if (mProgressItem.percent - lastPercent >= 0.01) {
-
-                System.out.println("MainActivity.onProgressChanged## " + mProgressItem.percent);
-                lastPercent = mProgressItem.percent;
-            }*/
         }
 
         @Override
@@ -193,7 +186,7 @@ public class MainActivity extends BaseUiLoadActivity {
             adapterPresenter.addAllItem(basePlayer.getFileMetaDatas());
             setPlayUiWithData(metaDatas.get(0));
         } else {
-            List<FileMetaData> dataList = FileMetaDataSave.getInstance().getFileMetaDataList();
+            List<FileMetaData> dataList = FileMetaDataRepo.getInstance().getFileMetaDataList();
             if (CollectionUtils.isNotEmpty(dataList)) {
                 adapterPresenter.addAllItem(dataList);
             }

@@ -26,12 +26,12 @@ import timber.log.Timber;
  * TIME: 22:41
  */
 
-public class FileMetaDataSave {
+public class FileMetaDataRepo {
 
     private List<FileMetaData> fileMetaDataList; // url//objectId
 
-    public static FileMetaDataSave getInstance() {
-        return Sington.INSTANCE.fileMetaDataSave;
+    public static FileMetaDataRepo getInstance() {
+        return Sington.INSTANCE.fileMetaDataRepo;
     }
 
     public void setFileMetaDataList(List<FileMetaData> fileMetaDataList) {
@@ -40,6 +40,12 @@ public class FileMetaDataSave {
 
     public List<FileMetaData> getFileMetaDataList() {
         return fileMetaDataList;
+    }
+
+    private volatile boolean isInited = false;
+
+    public boolean isInited() {
+        return isInited;
     }
 
     /**
@@ -52,6 +58,7 @@ public class FileMetaDataSave {
                 if (CollectionUtils.isEmpty(fileMetaDataList)) {
                     List<FileMetaData> dataFromCache = getDataFromCache();
                     setFileMetaDataList(dataFromCache);
+                    isInited = true;
                 }
 
                 return null;
@@ -59,6 +66,7 @@ public class FileMetaDataSave {
                     .subscribe(Actions.empty(), RxUiUtils.onErrorDefault());
         } else {
             setFileMetaDataList(getDataFromCache());
+            isInited = true;
         }
     }
 
@@ -82,7 +90,6 @@ public class FileMetaDataSave {
             }
         }
         return null;
-
     }
 
     // notice: 2016/12/8 后期可以使用你数据库等等做静态存储
@@ -117,10 +124,10 @@ public class FileMetaDataSave {
 
     private enum Sington {
         INSTANCE;
-        private FileMetaDataSave fileMetaDataSave;
+        private FileMetaDataRepo fileMetaDataRepo;
 
         Sington() {
-            fileMetaDataSave = new FileMetaDataSave();
+            fileMetaDataRepo = new FileMetaDataRepo();
         }
     }
 

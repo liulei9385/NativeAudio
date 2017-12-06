@@ -36,6 +36,8 @@ public class SplashActivity extends AppCompatActivity {
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        Timber.e("SplashActivity.onCreate####");
+
         //StatusBarUtils.hideStatusBar(this);
         setContentView(R.layout.activity_splash);
         MusicFileSearch.getInstace().startToSearchMp3File();

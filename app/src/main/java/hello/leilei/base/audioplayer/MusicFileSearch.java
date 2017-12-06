@@ -2,6 +2,7 @@ package hello.leilei.base.audioplayer;
 
 import java.io.File;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import hello.leilei.lyric.LyricPresenter;
 import hello.leilei.model.FileMetaData;
@@ -13,6 +14,7 @@ import rx.Observable;
 import rx.functions.Func0;
 import rx.functions.Func1;
 import rx.observables.ConnectableObservable;
+import rx.schedulers.Schedulers;
 import timber.log.Timber;
 
 /**
@@ -63,7 +65,26 @@ public class MusicFileSearch {
 
     public void startToSearchMp3File() {
 
-        Observable<List<FileMetaData>> listObservable = getSearchFileObserable()
+        FileMetaDataRepo metaDataRepo = FileMetaDataRepo.getInstance();
+
+        if (!metaDataRepo.isInited()) {
+            // 延时等待1s
+            Observable.timer(1, TimeUnit.SECONDS)
+                    .subscribe((ojb) -> {
+                        if (!metaDataRepo.isInited())
+                            return;
+                        startToSearchMp3FileInternal();
+
+                    }, RxUiUtils.onErrorDefault());
+        } else {
+            startToSearchMp3FileInternal();
+        }
+    }
+
+    private void startToSearchMp3FileInternal() {
+
+        // 扫描磁盘文件
+        final Observable<List<FileMetaData>> listObservable = getSearchFileObserable()
                 .flatMap(mp3FileList -> {
                     this.mp3FileList = mp3FileList;
                     if (CollectionUtils.isNotEmpty(mp3FileList))
@@ -71,7 +92,7 @@ public class MusicFileSearch {
                     return Observable.error(new IllegalArgumentException("list was null"));
                 });
 
-
+        // 获取FileMetaData(请求逻辑哦)
         Observable<List<FileMetaData>> observable = Observable.fromCallable((Func0<List<FileMetaData>>) ()
                 -> mLyricPresenter.getMetaDataWithResolver())
                 .flatMap(new Func1<List<FileMetaData>, Observable<List<FileMetaData>>>() {
@@ -79,18 +100,30 @@ public class MusicFileSearch {
                     public Observable<List<FileMetaData>> call(List<FileMetaData> fileMetaDatas) {
                         if (CollectionUtils.isEmpty(fileMetaDatas)) {
                             Timber.d("search 文件获取");
-                            return listObservable;
+                            return listObservable.subscribeOn(Schedulers.computation());
                         }
-                        Timber.d("search db 获取");
+                        Timber.d("ContentResolver 获取");
                         return Observable.just(fileMetaDatas);
                     }
                 });
 
-        observable.subscribe(datas -> {
+        Observable.just(null)
+                .flatMap((ojb) -> {
+                    FileMetaDataRepo metaDataRepo = FileMetaDataRepo.getInstance();
+                    if (CollectionUtils.isEmpty(metaDataRepo.getFileMetaDataList()))
+                        return observable.subscribeOn(Schedulers.io());
+                    else{
+                        new PlayerLoader().getPlayer(PlayerLoader.PlayerType.EXOPLAYER)
+                                .setFileMetaDatas(metaDataRepo.getFileMetaDataList());
+                    }
+                    return Observable.empty();
+                }).subscribe(fileMetaList -> {
 
-            new PlayerLoader().getPlayer(PlayerLoader.PlayerType.EXOPLAYER)
-                    .setFileMetaDatas(datas);
-            FileMetaDataSave.getInstance().saveFileMetaDataAndCache(datas);
+            if (CollectionUtils.isNotEmpty(fileMetaList)) {
+                new PlayerLoader().getPlayer(PlayerLoader.PlayerType.EXOPLAYER)
+                        .setFileMetaDatas(fileMetaList);
+                FileMetaDataRepo.getInstance().saveFileMetaDataAndCache(fileMetaList);
+            }
 
         }, Throwable::printStackTrace);
 
