@@ -15,6 +15,7 @@ import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
+import android.text.TextUtils;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -25,6 +26,9 @@ import android.widget.TextView;
 import com.bumptech.glide.Glide;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 
 import butterknife.BindView;
@@ -59,12 +63,15 @@ import timber.log.Timber;
  */
 public class MainActivity extends BaseUiLoadActivity {
 
-    public static final String RQ_AUDIO = Manifest.permission.RECORD_AUDIO;
+    public static final String PERMISSION_RQ_AUDIO = Manifest.permission.RECORD_AUDIO;
+    public static final int REQCODE_AUDIO = 0x01;
+    public static final int REQCODE_READ_EXTERNAL = 0x02;
+    public static final int REQCODE_AUDIO_READ_EXTERNAL = 0x03;
     AdapterPresenter<FileMetaData> adapterPresenter;
     LyricPresenter mLyricPresenter;
     BasePlayer basePlayer;
     private ActViewHolder mActViewHolder;
-    IPlayerCallback playerCallback = new IPlayerCallback() {
+    private IPlayerCallback playerCallback = new IPlayerCallback() {
 
         @Override
         public void onPlayState(int state) {
@@ -81,10 +88,16 @@ public class MainActivity extends BaseUiLoadActivity {
 
         @Override
         public void onLoadResourceComplete() {
+
             if (adapterPresenter.getCount() > 0)
                 adapterPresenter.clear();
-            adapterPresenter.addAllItem(basePlayer.getFileMetaDatas());
-            setPlayUiWithData(adapterPresenter.getItem(0));
+
+            runOnUiThread(() -> {
+                adapterPresenter.addAllItem(basePlayer.getFileMetaDatas());
+                setPlayUiWithData(adapterPresenter.getItem(0));
+                mActViewHolder.loadProgressbBar.setVisibility(View.GONE);
+            });
+
         }
     };
     private Subscription seachFileSubscri;
@@ -185,6 +198,7 @@ public class MainActivity extends BaseUiLoadActivity {
         if (!CollectionUtils.isEmpty(metaDatas)) {
             adapterPresenter.addAllItem(basePlayer.getFileMetaDatas());
             setPlayUiWithData(metaDatas.get(0));
+            mActViewHolder.loadProgressbBar.setVisibility(View.GONE);
         } else {
             List<FileMetaData> dataList = FileMetaDataRepo.getInstance().getFileMetaDataList();
             if (CollectionUtils.isNotEmpty(dataList)) {
@@ -195,22 +209,46 @@ public class MainActivity extends BaseUiLoadActivity {
         mActViewHolder.mProgressBar.setMax(NativePlayer.SEEKBAR_MAX / 2);
     }
 
+    private boolean isPersGranted(String permiss) {
+        int gratId = ActivityCompat.checkSelfPermission(this, permiss);
+        return gratId == PackageManager.PERMISSION_GRANTED;
+    }
+
+    private void reqPermissIfNotGranted(String[] permission, int reqCode) {
+
+        List<String> pers = new ArrayList<>(Arrays.asList(permission));
+        Iterator<String> iterator;
+        for (iterator = pers.iterator(); iterator.hasNext(); ) {
+            String next = iterator.next();
+            if (isPersGranted(next))
+                iterator.remove();
+        }
+
+        if (pers.size() == 0)
+            return;
+
+        String[] extraPers = new String[pers.size()];
+        pers.toArray(extraPers);
+        if (extraPers.length == 0)
+            return;
+
+        ActivityCompat.requestPermissions(this, extraPers, reqCode);
+    }
+
     @Override
     protected void obtainData() {
 
-        int gratId = ActivityCompat.checkSelfPermission(this, RQ_AUDIO);
-        if (gratId != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this, new String[]{RQ_AUDIO}, 2);
-        } else
-            NativePlayer.getInstance().initAudio();
+        if (isPersGranted(PERMISSION_RQ_AUDIO)) {
+            if (basePlayer instanceof NativePlayer) {
+                NativePlayer.getInstance().initAudio();
+            }
+        }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
-            gratId = ActivityCompat.checkSelfPermission(this,
-                    Manifest.permission.READ_EXTERNAL_STORAGE);
-            if (gratId != PackageManager.PERMISSION_GRANTED) {
-                ActivityCompat.requestPermissions(this,
-                        new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, 3);
-            }
+            String[] permission = new String[]{PERMISSION_RQ_AUDIO, Manifest.permission.READ_EXTERNAL_STORAGE};
+            reqPermissIfNotGranted(permission, REQCODE_AUDIO_READ_EXTERNAL);
+        } else {
+            reqPermissIfNotGranted(new String[]{PERMISSION_RQ_AUDIO}, REQCODE_AUDIO);
         }
     }
 
@@ -240,16 +278,32 @@ public class MainActivity extends BaseUiLoadActivity {
                                            @NonNull String[] permissions,
                                            @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if (grantResults.length == 1 && requestCode == 2) {
-            if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+
+        boolean searchMp3File = false;
+
+        if (requestCode == REQCODE_AUDIO) {
+            if (grantResults[0] == PackageManager.PERMISSION_GRANTED)
                 if (basePlayer instanceof NativePlayer)
                     NativePlayer.getInstance().initAudio();
+        } else if (requestCode == REQCODE_AUDIO_READ_EXTERNAL) {
+
+            for (int i = 0; i < permissions.length; i++) {
+                if (TextUtils.equals(Manifest.permission.READ_EXTERNAL_STORAGE, permissions[i])
+                        && grantResults[i] == PackageManager.PERMISSION_GRANTED)
+                    searchMp3File = true;
             }
-        } else if (grantResults.length == 1 && requestCode == 3) {
-            //noinspection StatementWithEmptyBody
-            if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                //req code
-            }
+
+        } else if (requestCode == REQCODE_READ_EXTERNAL) {
+
+            if (grantResults[0] == PackageManager.PERMISSION_GRANTED)
+                searchMp3File = true;
+
+        }
+
+        if (searchMp3File && basePlayer.getCount() <= 0) {
+
+            mActViewHolder.loadProgressbBar.setVisibility(View.VISIBLE);
+            MusicFileSearch.getInstace().startToSearchMp3File();
         }
     }
 
@@ -321,6 +375,9 @@ public class MainActivity extends BaseUiLoadActivity {
 
         @BindView(R.id.progressV)
         ProgressBar mProgressBar;
+
+        @BindView(R.id.loadProgressbV)
+        ProgressBar loadProgressbBar;
 
         @OnClick({R.id.playNextIv, R.id.playIv, R.id.bottomRL})
         void onClick(View view) {

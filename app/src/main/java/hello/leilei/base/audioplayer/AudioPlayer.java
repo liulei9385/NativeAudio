@@ -77,7 +77,7 @@ public class AudioPlayer extends BasePlayer {
         }, null, null);
         exoPlayer.prepare(mediaSource);
         exoPlayer.setPlayWhenReady(true);
-        setPlayerState(ExoPlayer.STATE_READY);
+        setPlayerState(Player.STATE_READY);
         changePlayProgress();
         RxUiUtils.postDelayedOnBg(1000L, () -> Timber.d("fileUrl##" + fileUri + "###duration=" +
                 exoPlayer.getDuration()));
@@ -91,7 +91,7 @@ public class AudioPlayer extends BasePlayer {
 
         if (selectIndex < 0 || selectIndex >= getCount()) return;
 
-        if (shouldPlay()) {
+        if (shouldPlay(selectIndex)) {
             setCurrentPlayIndex(selectIndex);
             exoPlayer.setPlayWhenReady(false);
             FileMetaData metaData = getMetaData(selectIndex);
@@ -100,12 +100,19 @@ public class AudioPlayer extends BasePlayer {
         }
 
         int state = exoPlayer.getPlaybackState();
-        if (state == ExoPlayer.STATE_READY) {
-            boolean isReady = exoPlayer.getPlayWhenReady();
-            exoPlayer.setPlayWhenReady(!isReady);
-            setPlayerState(state);
-        } else if (state == ExoPlayer.STATE_ENDED) {
-            playNext();
+        switch (state) {
+            case Player.STATE_READY:
+                boolean isReady = exoPlayer.getPlayWhenReady();
+                exoPlayer.setPlayWhenReady(!isReady);
+                setPlayerState(state);
+                break;
+            case Player.STATE_ENDED:
+                playNext();
+                break;
+            case Player.STATE_IDLE:
+                FileMetaData metaData = getMetaData(selectIndex);
+                exoPlayMp3(metaData.getUri());
+                break;
         }
     }
 

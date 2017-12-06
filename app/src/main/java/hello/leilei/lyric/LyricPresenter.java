@@ -1,11 +1,15 @@
 package hello.leilei.lyric;
 
 import android.content.ContentResolver;
+import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.media.MediaMetadataRetriever;
+import android.os.Build;
 import android.provider.MediaStore;
 import android.support.annotation.NonNull;
+import android.support.v4.content.PermissionChecker;
 import android.text.TextUtils;
+import android.util.Log;
 
 import java.io.File;
 import java.io.IOException;
@@ -38,6 +42,8 @@ import timber.log.Timber;
  * TIME: 14:47
  */
 public class LyricPresenter {
+
+    public static final String TAG = "LyricPresenter";
 
     private NewKugouLryicService mNewKugouLryicService;
 
@@ -133,7 +139,22 @@ public class LyricPresenter {
         }
     }
 
+    /**
+     * 必须要有这个权限哦READ_EXTERNAL_STORAGE
+     *
+     * @return
+     */
     public List<FileMetaData> getMetaDataWithResolver() {
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
+            int grandId = PermissionChecker.checkSelfPermission(MainApplication.getApp(),
+                    android.Manifest.permission.READ_EXTERNAL_STORAGE);
+            if (grandId != PackageManager.PERMISSION_GRANTED) {
+                Log.e(TAG, "getMetaDataWithResolver but not grand permission(READ_EXTERNAL_STORAGE)....");
+                return null;
+            }
+        }
+
         ContentResolver contentResolver = MainApplication.getApp().getContentResolver();
         Cursor cursor = contentResolver.query(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
                 null, null, null, MediaStore.Audio.Media.DEFAULT_SORT_ORDER);

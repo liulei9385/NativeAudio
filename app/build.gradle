@@ -93,6 +93,7 @@ dependencies {
 
     compile "${rootProject.ext.support_annotations}"
     compile "${rootProject.ext.recyclerview_v7}"
+    compile "${rootProject.ext.constraint_layout}"
     // design 包括 v4,v7
     compile "${rootProject.ext.support_design}"
     compile 'com.jakewharton.timber:timber:4.6.0'

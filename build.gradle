@@ -62,6 +62,9 @@ ext {
     // design 包括 v4,v7
     support_design = 'com.android.support:design:' + support_version
 
+    //约束布局
+    constraint_layout = 'com.android.support.constraint:constraint-layout:1.0.2'
+
     // 异步
     rxandroid = 'io.reactivex:rxandroid:1.2.1'
     rxjava = 'io.reactivex:rxjava:1.2.2'

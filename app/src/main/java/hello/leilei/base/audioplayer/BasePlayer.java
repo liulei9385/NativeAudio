@@ -25,7 +25,6 @@ public abstract class BasePlayer {
     public static final int ERROR = -1;
     protected LyricPresenter mLyricPresenter;
     private int currentPlayIndex = -1;
-    private int selectIndex = -1;
     protected List<IPlayerCallback> mPlayerCallbacks;
     private List<FileMetaData> fileMetaDatas;
     private Subscription changeProgressSubscri;
@@ -51,8 +50,8 @@ public abstract class BasePlayer {
      *
      * @return
      */
-    public boolean shouldPlay() {
-        return currentPlayIndex != selectIndex;
+    public boolean shouldPlay(int index) {
+        return currentPlayIndex != index;
     }
 
     public LyricPresenter getLyricPresenter() {
@@ -76,7 +75,7 @@ public abstract class BasePlayer {
         }
     }
 
-    protected int getCount() {
+    public final int getCount() {
         return fileMetaDatas != null ? fileMetaDatas.size() : 0;
     }
 
