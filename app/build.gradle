@@ -62,15 +62,20 @@ dependencies {
 
     // Android Testing Support Library's runner and rules
     androidTestCompile "${rootProject.ext.test_junit}"
-    androidTestCompile "${rootProject.ext.test_runner}"
-    androidTestCompile "${rootProject.ext.test_rules}"
+    androidTestCompile('com.android.support.test:runner:0.5') {
+        exclude group: 'com.android.support', module: 'support-annotations'
+    }
+    androidTestCompile('com.android.support.test:runner:0.5') {
+        exclude group: 'com.android.support', module: 'support-annotations'
+    }
     //androidTestCompile "${rootProject.ext.espresso_core}"
 
-    androidTestCompile "${rootProject.ext.support_design}"
     androidTestCompile "${rootProject.ext.support_annotations}"
     androidTestCompile "${rootProject.ext.recyclerview_v7}"
-
+    androidTestCompile "${rootProject.ext.support_design}"
     testCompile "${rootProject.ext.test_junit}"
+
+    compile "${rootProject.ext.support_annotations}"
     compile "${rootProject.ext.recyclerview_v7}"
     // design 包括 v4,v7
     compile "${rootProject.ext.support_design}"
@@ -94,13 +99,9 @@ dependencies {
 
     // butterknife
     apt "${rootProject.ext.butterknife_compiler}"
-    compile "${rootProject.ext.butterknife}"
-
-    compile "${rootProject.ext.rxbinding}"
-    compile "${rootProject.ext.rxbinding_support_v4}"
-    compile "${rootProject.ext.rxbinding_appcompat_v7}"
-    compile "${rootProject.ext.rxbinding_recyclerview_v7}"
-    compile "${rootProject.ext.rxbinding_design}"
+    compile("${rootProject.ext.butterknife}"){
+        exclude group: 'com.android.support', module: 'support-annotations'
+    }
     //图片加载
     compile "${rootProject.ext.glide}"
     //compile "${rootProject.ext.gson}"
@@ -108,8 +109,14 @@ dependencies {
     compile project(':library')
 
     //compile 'cn.zhaiyifan:lyricview:1.0.1'
-    compile 'me.leilei.learncode:bmoblibrary:0.0.5-SNAPSHOT@aar'
-    compile "${rootProject.ext.exoplayer}"
-    compile "${rootProject.ext.exoplayer_okhttp}"
-    compile project(':extensions:extension-ffmpeg')
+    compile project(':bmoblibrary')
+    //compile 'me.leilei.learncode:bmoblibrary:0.0.5-SNAPSHOT@aar'
+    compile("${rootProject.ext.exoplayer_core}"){
+        exclude group: 'com.android.support', module: 'support-annotations'
+    }
+    //compile "${rootProject.ext.exoplayer_okhttp}"
+    compile("${rootProject.ext.exoplayer_okhttp}"){
+        exclude group: 'com.android.support', module: 'support-annotations'
+    }
+    compile project(':extensions:ffmpeg')
 }

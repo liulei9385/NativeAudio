@@ -2,7 +2,11 @@ package hello.leilei.base.listener;
 
 import com.google.android.exoplayer2.ExoPlaybackException;
 import com.google.android.exoplayer2.ExoPlayer;
+import com.google.android.exoplayer2.PlaybackParameters;
+import com.google.android.exoplayer2.Player;
 import com.google.android.exoplayer2.Timeline;
+import com.google.android.exoplayer2.source.TrackGroupArray;
+import com.google.android.exoplayer2.trackselection.TrackSelectionArray;
 
 /**
  * Created by liulei
@@ -10,7 +14,7 @@ import com.google.android.exoplayer2.Timeline;
  * TIME: 23:12
  */
 
-public class SimpleEventListener implements ExoPlayer.EventListener {
+public class SimpleEventListener implements Player.EventListener {
     @Override
     public void onLoadingChanged(boolean isLoading) {
     }
@@ -20,7 +24,21 @@ public class SimpleEventListener implements ExoPlayer.EventListener {
     }
 
     @Override
+    public void onRepeatModeChanged(int repeatMode) {
+
+    }
+
+    @Override
+    public void onShuffleModeEnabledChanged(boolean shuffleModeEnabled) {
+
+    }
+
+    @Override
     public void onTimelineChanged(Timeline timeline, Object manifest) {
+    }
+
+    @Override
+    public void onTracksChanged(TrackGroupArray trackGroups, TrackSelectionArray trackSelections) {
     }
 
     @Override
@@ -28,6 +46,14 @@ public class SimpleEventListener implements ExoPlayer.EventListener {
     }
 
     @Override
-    public void onPositionDiscontinuity() {
+    public void onPositionDiscontinuity(int reason) {
+    }
+
+    @Override
+    public void onPlaybackParametersChanged(PlaybackParameters playbackParameters) {
+    }
+
+    @Override
+    public void onSeekProcessed() {
     }
 }

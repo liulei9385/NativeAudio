@@ -6,12 +6,9 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.StaggeredGridLayoutManager;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-
-import com.jakewharton.rxbinding.view.RxView;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -248,28 +245,29 @@ public abstract class BaseRecyclerAdapter<T> extends RecyclerView.Adapter<BaseVi
     protected void setListener(BaseViewHolder viewHolder) {
         if (!isEnabled(viewHolder.getItemViewType())) return;
         //click
-        RxView.clicks(viewHolder.itemView)
-                .subscribe(Void -> {
-                    if (itemClickListener != null) {
 
-                        int pos = viewHolder.getAdapterPosition();
-                        if (pos == -1) return;
+        final View.OnClickListener listener = view -> {
+            if (itemClickListener != null) {
 
-                        if (mHeaderView != null) {
-                            pos--;
-                        }
+                int pos = viewHolder.getAdapterPosition();
+                if (pos == -1) return;
 
-                        if (pos >= 0 && pos < getItemCount()) {
-                            itemClickListener.call(null,
-                                    viewHolder.itemView, getItemAtPostion(pos), pos);
-                        }
+                if (mHeaderView != null) {
+                    pos--;
+                }
+
+                if (pos >= 0 && pos < getItemCount()) {
+                    itemClickListener.call(null,
+                            viewHolder.itemView, getItemAtPostion(pos), pos);
+                }
 
 
-                    }
-                });
+            }
+        };
+
+        viewHolder.itemView.setOnClickListener(listener);
         //long click
-        RxView.longClicks(viewHolder.itemView, () -> {
-
+        viewHolder.itemView.setOnLongClickListener(v -> {
             int pos = viewHolder.getAdapterPosition();
             if (pos == -1) return false;
 
@@ -283,7 +281,7 @@ public abstract class BaseRecyclerAdapter<T> extends RecyclerView.Adapter<BaseVi
             }
 
             return false;
-        }).subscribe();
+        });
     }
 
     @Override
@@ -353,10 +351,7 @@ public abstract class BaseRecyclerAdapter<T> extends RecyclerView.Adapter<BaseVi
             case EMPTY_VIEW:
                 if (holder.itemView != null) {
                     if (emptyClickListener != null) {
-                        RxView.clicks(holder.itemView)
-                                .subscribe((obj) -> {
-                                    emptyClickListener.call();
-                                });
+                        holder.itemView.setOnClickListener(view -> emptyClickListener.call());
                     }
 
                     if (emptyViewBindAction != null) {
@@ -373,7 +368,7 @@ public abstract class BaseRecyclerAdapter<T> extends RecyclerView.Adapter<BaseVi
         }
     }
 
-    Action1<View> emptyViewBindAction;
+    private Action1<View> emptyViewBindAction;
 
     /**
      * 绑定空白view

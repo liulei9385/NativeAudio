@@ -2,14 +2,17 @@ package hello.leilei.base.audioplayer;
 
 import android.annotation.SuppressLint;
 import android.net.Uri;
-import android.os.Handler;
 
 import com.google.android.exoplayer2.DefaultLoadControl;
+import com.google.android.exoplayer2.DefaultRenderersFactory;
 import com.google.android.exoplayer2.ExoPlayer;
 import com.google.android.exoplayer2.ExoPlayerFactory;
+import com.google.android.exoplayer2.LoadControl;
+import com.google.android.exoplayer2.Player;
 import com.google.android.exoplayer2.SimpleExoPlayer;
 import com.google.android.exoplayer2.extractor.Extractor;
 import com.google.android.exoplayer2.extractor.mp3.Mp3Extractor;
+import com.google.android.exoplayer2.extractor.mp4.Mp4Extractor;
 import com.google.android.exoplayer2.extractor.wav.WavExtractor;
 import com.google.android.exoplayer2.source.ExtractorMediaSource;
 import com.google.android.exoplayer2.trackselection.DefaultTrackSelector;
@@ -48,19 +51,15 @@ public class AudioPlayer extends BasePlayer {
         return player;
     }
 
-    public SimpleExoPlayer getExoPlayer() {
-        return exoPlayer;
-    }
-
     private void initPlayer() {
-        Handler eventHanlder = new Handler();
-        DefaultTrackSelector trackSelector = new DefaultTrackSelector(eventHanlder);
-        exoPlayer = ExoPlayerFactory.newSimpleInstance(MainApplication.getApp(),
-                trackSelector, new DefaultLoadControl());
+        LoadControl loadControl = new DefaultLoadControl();
+        DefaultTrackSelector trackSelector = new DefaultTrackSelector();
+        exoPlayer = ExoPlayerFactory.newSimpleInstance(new DefaultRenderersFactory(MainApplication.getApp()),
+                trackSelector, loadControl);
         exoPlayer.addListener(new SimpleEventListener() {
             @Override
             public void onPlayerStateChanged(boolean playWhenReady, int playbackState) {
-                if (playbackState == ExoPlayer.STATE_ENDED) {
+                if (playbackState == Player.STATE_ENDED) {
                     playNext();
                 }
             }
@@ -74,7 +73,7 @@ public class AudioPlayer extends BasePlayer {
         Uri localFileUri = Uri.fromFile(new File(fileUri));
         ExtractorMediaSource mediaSource = new ExtractorMediaSource(localFileUri,
                 new FileDataSourceFactory(), () -> new Extractor[]{
-                new Mp3Extractor(), new WavExtractor()
+                new Mp3Extractor(), new WavExtractor(), new Mp4Extractor()
         }, null, null);
         exoPlayer.prepare(mediaSource);
         exoPlayer.setPlayWhenReady(true);
