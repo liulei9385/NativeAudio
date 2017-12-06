@@ -9,4 +9,9 @@
         android:title="扫描文件夹"
         app:showAsAction="never" />
 
+    <item
+        android:id="@+id/refresh_list"
+        android:title="刷新"
+        app:showAsAction="never" />
+
 </menu>

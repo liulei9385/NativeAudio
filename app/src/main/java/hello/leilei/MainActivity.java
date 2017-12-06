@@ -333,6 +333,10 @@ public class MainActivity extends BaseUiLoadActivity {
             case R.id.media_scan:
                 startToScanMusic();
                 return true;
+            case R.id.refresh_list:
+                mActViewHolder.loadProgressbBar.setVisibility(View.VISIBLE);
+                MusicFileSearch.getInstace().forceToSearchMp3File();
+                return true;
         }
         return super.onOptionsItemSelected(item);
     }

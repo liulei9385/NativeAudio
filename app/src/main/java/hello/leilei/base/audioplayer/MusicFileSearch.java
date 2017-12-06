@@ -73,15 +73,22 @@ public class MusicFileSearch {
                     .subscribe((ojb) -> {
                         if (!metaDataRepo.isInited())
                             return;
-                        startToSearchMp3FileInternal();
+                        startToSearchMp3FileInternal(false);
 
                     }, RxUiUtils.onErrorDefault());
         } else {
-            startToSearchMp3FileInternal();
+            startToSearchMp3FileInternal(false);
         }
     }
 
-    private void startToSearchMp3FileInternal() {
+    public void forceToSearchMp3File() {
+        startToSearchMp3FileInternal(true);
+    }
+
+    /**
+     * @param force 是否强制刷新列表
+     */
+    private void startToSearchMp3FileInternal(boolean force) {
 
         // 扫描磁盘文件
         final Observable<List<FileMetaData>> listObservable = getSearchFileObserable()
@@ -110,9 +117,9 @@ public class MusicFileSearch {
         Observable.just(null)
                 .flatMap((ojb) -> {
                     FileMetaDataRepo metaDataRepo = FileMetaDataRepo.getInstance();
-                    if (CollectionUtils.isEmpty(metaDataRepo.getFileMetaDataList()))
+                    if (force || CollectionUtils.isEmpty(metaDataRepo.getFileMetaDataList()))
                         return observable.subscribeOn(Schedulers.io());
-                    else{
+                    else {
                         new PlayerLoader().getPlayer(PlayerLoader.PlayerType.EXOPLAYER)
                                 .setFileMetaDatas(metaDataRepo.getFileMetaDataList());
                     }
