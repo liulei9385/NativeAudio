@@ -65,23 +65,19 @@ public class NativePlayer extends BasePlayer {
 
     @Override
     public void playNext() {
-
-        if (selectIndex + 1 < getCount()) {
-            selectIndex++;
-            playMusic(selectIndex);
+        int playIndex = getCurrentPlayIndex();
+        if (playIndex + 1 < getCount()) {
+            playIndex++;
+            playMusic(playIndex);
         }
-        // notice: 2016/12/5 循环模式
     }
 
     @Override
     public void playPrevious() {
-        if (selectIndex >= 1)
-            selectIndex--;
-        playMusic(selectIndex);
-    }
-
-    public int getCuttentPlayIndex() {
-        return currentPlayIndex;
+        int playIndex = getCurrentPlayIndex();
+        if (playIndex >= 1)
+            playIndex--;
+        playMusic(playIndex);
     }
 
     public void pauseCurrPlayMusic() {
@@ -89,7 +85,7 @@ public class NativePlayer extends BasePlayer {
     }
 
     public void playMusic(int selectIndex) {
-        this.selectIndex = selectIndex;
+        int currentPlayIndex = getCurrentPlayIndex();
         int state = NativeAudio.getPlayingUriState();
         //* 0 stoped 1 play 2 pause -1 error
         if (state == ERROR || state == STOPPED || currentPlayIndex != selectIndex) {
@@ -127,15 +123,16 @@ public class NativePlayer extends BasePlayer {
             return;
         }
 
-        if (selectIndex >= 0 && selectIndex < count) {
+        int currentPlayIndex = getCurrentPlayIndex();
 
-            FileMetaData metaData = getMetaData(selectIndex);
+        if (currentPlayIndex >= 0 && currentPlayIndex < count) {
+
+            FileMetaData metaData = getMetaData(currentPlayIndex);
             if (metaData == null || TextUtils.isEmpty(metaData.getUri())) {
                 //showSToast("歌曲文件错误");
                 return;
             }
             playMp3Music(metaData.getUri());
-            currentPlayIndex = selectIndex;
         }
     }
 

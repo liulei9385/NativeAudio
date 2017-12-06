@@ -91,8 +91,8 @@ public class AudioPlayer extends BasePlayer {
 
         if (selectIndex < 0 || selectIndex >= getCount()) return;
 
-        if (currentPlayIndex != selectIndex) {
-            currentPlayIndex = selectIndex;
+        if (shouldPlay()) {
+            setCurrentPlayIndex(selectIndex);
             exoPlayer.setPlayWhenReady(false);
             FileMetaData metaData = getMetaData(selectIndex);
             exoPlayMp3(metaData.getUri());
@@ -123,13 +123,13 @@ public class AudioPlayer extends BasePlayer {
     // 播放下一首
     @Override
     public void playNext() {
-        playMusic(currentPlayIndex + 1);
+        playMusic(getCurrentPlayIndex() + 1);
     }
 
     // 播放上一首
     @Override
     public void playPrevious() {
-        playMusic(--currentPlayIndex);
+        playMusic(getCurrentPlayIndex() - 1);
     }
 
     public void release() {

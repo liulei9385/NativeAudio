@@ -23,15 +23,16 @@ public abstract class BasePlayer {
     public static final int PLAYED = 1;
     public static final int PAUSED = 2;
     public static final int ERROR = -1;
-
-    private List<FileMetaData> fileMetaDatas;
     protected LyricPresenter mLyricPresenter;
-
-    protected int currentPlayIndex = -1;
-    protected int selectIndex;
-
+    private int currentPlayIndex = -1;
+    private int selectIndex = -1;
     protected List<IPlayerCallback> mPlayerCallbacks;
+    private List<FileMetaData> fileMetaDatas;
     private Subscription changeProgressSubscri;
+
+    public BasePlayer() {
+        mLyricPresenter = new LyricPresenter();
+    }
 
     public void addPlayerCallback(IPlayerCallback mPlayerCallback) {
         if (mPlayerCallbacks == null)
@@ -45,8 +46,13 @@ public abstract class BasePlayer {
         }
     }
 
-    public BasePlayer() {
-        mLyricPresenter = new LyricPresenter();
+    /**
+     * 是否要进行播放
+     *
+     * @return
+     */
+    public boolean shouldPlay() {
+        return currentPlayIndex != selectIndex;
     }
 
     public LyricPresenter getLyricPresenter() {
@@ -59,6 +65,10 @@ public abstract class BasePlayer {
 
     public void setFileMetaDatas(List<FileMetaData> fileMetaDatas) {
         this.fileMetaDatas = fileMetaDatas;
+        if (!CollectionUtils.isEmpty(fileMetaDatas)) {
+            if (currentPlayIndex == -1)
+                currentPlayIndex = 0;
+        }
         if (mPlayerCallbacks != null) {
             //noinspection Convert2streamapi
             for (IPlayerCallback callback : mPlayerCallbacks)
@@ -80,6 +90,10 @@ public abstract class BasePlayer {
         return currentPlayIndex;
     }
 
+    public void setCurrentPlayIndex(int currentPlayIndex) {
+        this.currentPlayIndex = currentPlayIndex;
+    }
+
     public boolean isResouceLoadComplete() {
         return CollectionUtils.isNotEmpty(getFileMetaDatas());
     }
@@ -99,18 +113,6 @@ public abstract class BasePlayer {
     public abstract void playPrevious();
 
     public abstract void release();
-
-    public static class ProgressItem {
-        public long duration;
-        public long position;
-        public float percent;
-
-        public ProgressItem(long duration, long position, float percent) {
-            this.duration = duration;
-            this.position = position;
-            this.percent = percent;
-        }
-    }
 
     public void enableProgressChange(boolean isEnable) {
         if (!isEnable)
@@ -145,6 +147,18 @@ public abstract class BasePlayer {
                     }
 
                 }, Throwable::printStackTrace);
+    }
+
+    public static class ProgressItem {
+        public long duration;
+        public long position;
+        public float percent;
+
+        public ProgressItem(long duration, long position, float percent) {
+            this.duration = duration;
+            this.position = position;
+            this.percent = percent;
+        }
     }
 
 
