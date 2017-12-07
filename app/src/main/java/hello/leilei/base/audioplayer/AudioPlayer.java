@@ -10,6 +10,7 @@ import com.google.android.exoplayer2.ExoPlayerFactory;
 import com.google.android.exoplayer2.LoadControl;
 import com.google.android.exoplayer2.Player;
 import com.google.android.exoplayer2.SimpleExoPlayer;
+import com.google.android.exoplayer2.ext.flac.FlacExtractor;
 import com.google.android.exoplayer2.extractor.Extractor;
 import com.google.android.exoplayer2.extractor.mp3.Mp3Extractor;
 import com.google.android.exoplayer2.extractor.mp4.Mp4Extractor;
@@ -73,7 +74,7 @@ public class AudioPlayer extends BasePlayer {
         Uri localFileUri = Uri.fromFile(new File(fileUri));
         ExtractorMediaSource mediaSource = new ExtractorMediaSource(localFileUri,
                 new FileDataSourceFactory(), () -> new Extractor[]{
-                new Mp3Extractor(), new WavExtractor(), new Mp4Extractor()
+                new Mp3Extractor(), new WavExtractor(), new Mp4Extractor(), new FlacExtractor()
         }, null, null);
         exoPlayer.prepare(mediaSource);
         exoPlayer.setPlayWhenReady(true);
