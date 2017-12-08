@@ -111,11 +111,25 @@ public class LyricPresenter {
                 .compose(RxUiUtils.applySchedulers());
     }
 
+    /**
+     * 可能为音乐文件哦
+     *
+     * @return
+     */
+    private boolean probableMediaFile(String url) {
+
+        //noinspection SimplifiableIfStatement
+        if (TextUtils.isEmpty(url))
+            return false;
+
+        return url.endsWith(".mp3") ||
+                url.endsWith(".m4a") || url.endsWith(".M4A") ||
+                url.endsWith(".flac");
+    }
+
     private List<FileMetaData> getMeteData(List<String> fileUris) {
 
         if (CollectionUtils.isEmpty(fileUris)) return null;
-
-        Timber.d("begin getMeteDatas ");
 
         try {
 
@@ -124,8 +138,14 @@ public class LyricPresenter {
             List<FileMetaData> fileMetaDatas = new ArrayList<>();
             //noinspection Convert2streamapi
             for (String uri : fileUris) {
-                if (TextUtils.isEmpty(uri) || !uri.endsWith(".mp3")) continue;
-                FileMetaData metaData = getMetaDataForFile(metaRetriver, uri);
+
+                if (!probableMediaFile(uri)) continue;
+
+                FileMetaData metaData;
+                if (uri.endsWith(".flac")) {
+                    metaData = getMetaDtaWithFlacFile(uri);
+                } else metaData = getMetaDataForFile(metaRetriver, uri);
+
                 if (metaData != null)
                     fileMetaDatas.add(metaData);
             }
@@ -187,13 +207,16 @@ public class LyricPresenter {
                 metaData.setUri(url);
                 fileMetaDataList.add(metaData);
 
-                metaRetriver.setDataSource(url);
-                //notice 缓存图片，并生成一个对应的uri供glide加载
-                File sdCacheFile = FileUtils.createSdCacheFile(MainApplication.getApp(),
-                        getArtThumbName(metaData));
-                if (FileUtils.getFileSize(sdCacheFile) <= 0L)
-                    cacheArtThumbForFile(metaData, metaRetriver.getEmbeddedPicture());
-
+                try {
+                    metaRetriver.setDataSource(url);
+                    //notice 缓存图片，并生成一个对应的uri供glide加载
+                    File sdCacheFile = FileUtils.createSdCacheFile(MainApplication.getApp(),
+                            getArtThumbName(metaData));
+                    if (FileUtils.getFileSize(sdCacheFile) <= 0L)
+                        cacheArtThumbForFile(metaData, metaRetriver.getEmbeddedPicture());
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                }
 
             }
 
@@ -230,6 +253,48 @@ public class LyricPresenter {
 
         } catch (Exception ex) {
             ex.printStackTrace();
+            Log.e(TAG, "" + fileUri, ex);
+        }
+
+        return null;
+    }
+
+    /**
+     * 获取flac的MetaData
+     *
+     * @param fileUri
+     * @return
+     */
+    private FileMetaData getMetaDtaWithFlacFile(String fileUri) {
+
+        try {
+
+            FileMetaData metaData = new FileMetaData();
+            metaData.setUri(fileUri);
+
+            /*FFmpegMediaMetadataRetriever mmr = new FFmpegMediaMetadataRetriever();
+            mmr.setDataSource(fileUri);
+            metaData.author = mmr.extractMetadata(FFmpegMediaMetadataRetriever.METADATA_KEY_ALBUM_ARTIST);
+            metaData.duration = mmr.extractMetadata(FFmpegMediaMetadataRetriever.METADATA_KEY_DURATION);
+            metaData.album = mmr.extractMetadata(FFmpegMediaMetadataRetriever.METADATA_KEY_ALBUM);
+            metaData.artlist = mmr.extractMetadata(FFmpegMediaMetadataRetriever.METADATA_KEY_ARTIST);
+            metaData.title = mmr.extractMetadata(FFmpegMediaMetadataRetriever.METADATA_KEY_TITLE);*/
+
+            metaData.phoneid = FileMetaData.getUuid();
+
+            //notice 缓存图片，并生成一个对应的uri供glide加载
+            File sdCacheFile = FileUtils.createSdCacheFile(MainApplication.getApp(),
+                    getArtThumbName(metaData));
+            /*if (FileUtils.getFileSize(sdCacheFile) <= 0L)
+                cacheArtThumbForFile(metaData, mmr.getEmbeddedPicture());
+
+            mmr.release();*/
+
+            return metaData;
+
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            Log.e(TAG, "" + fileUri, ex);
         }
 
         return null;

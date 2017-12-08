@@ -1,11 +1,11 @@
 #include <stdio.h>
 #include <string.h>
-#include <sys/types.h>
 #include <dirent.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <malloc.h>
 #include "include/file-find.h"
-#include "time.h"
+//#include "time.h"
 
 int len = 0;
 
@@ -13,7 +13,7 @@ int scan_dir_only(char *path, int depth) {
     scan_dir(path, NULL, NULL, depth);
 }
 
-long get_time() {
+/*long get_time() {
     time_t rawtime;
     //struct tm *timeinfo;
     time(&rawtime);
@@ -23,27 +23,33 @@ long get_time() {
     //LOGE("The current date time is: %s", asctime(timeinfo));
     //LOGE("The current date time is: %ld", rawtime);
     return rawtime;
-}
+}*/
 
 /**
  * 扫描目录
  */
-int scan_dir(char *path, char *format, char **source, int depth) {
+int scan_dir(char *path, char **formats, char **source, int depth) {
 
     DIR *dir;
     //为了获取某文件夹目录内容
     struct dirent *file;
     struct stat buf;
-    char childpath[512];
+    char childPath[512];
 
-    memset(childpath, 0, sizeof(childpath));
-
-    //LOGE("path=%s", path);
+    memset(childPath, 0, sizeof(childPath));
 
     if (!(dir = opendir(path))) {
         LOGE("error opendir %s !!!", path);
         return -1;
     }
+
+    int arrarLen = 0;
+    char *tem = formats[0];
+    while (tem != NULL) {
+        arrarLen++;
+        tem = formats[arrarLen];
+    }
+
     chdir(path);
     while ((file = readdir(dir)) != NULL) {
         //第一个字符为"."
@@ -61,62 +67,70 @@ int scan_dir(char *path, char *format, char **source, int depth) {
                     continue;
                 if ((buf.st_mode & S_IRUSR) || (buf.st_mode & S_IRGRP)
                     || (buf.st_mode & S_IROTH)) {
-                    if (format != NULL && source != NULL) {
-                        char *last = malloc(4 * sizeof(char));
-                        int fileLen = (int) strlen(file->d_name);
-                        if (fileLen >= 4) {
-                            //"a.mp3" ".mp3"
-                            strncpy(last, (file->d_name) + (fileLen - 4), 4);
-                            last[4] = '\0';
-                            // format 是否是 last 的子串
-                            if (strstr(last, format)) {
-                                //LOGD("search the music is %s %s", last, file->d_name);
-                                if (len < 256) {
-                                    sprintf(childpath, "%s/%s", path, file->d_name);
-                                    int max = (int) (fileLen + 1 + strlen(path));
-                                    childpath[max] = '\0';
-                                    char *temp = malloc(max * sizeof(char));
-                                    strcpy(temp, childpath);
 
-                                    *(source + (len++)) = temp;
-                                    //LOGE("WE１ %s,size=%d", *(source + (len - 1)), max);
-                                    //TODO 要好好查看下错误
-                                    //strcpy(*(source), file->d_name);
+                    if (source != NULL) {
+
+                        for (int i = 0; i < arrarLen; i++) {
+
+                            char *ft = formats[i];
+                            size_t formatLen = strlen(ft);
+                            int fileLen = (int) strlen(file->d_name);
+
+                            if (fileLen >= formatLen) {
+                                // '.'最后出现的str
+                                char *str = strrchr(file->d_name, '.');
+                                if (str != NULL && strstr(str, ft)) {
+                                    if (len < 256) {
+                                        sprintf(childPath, "%s/%s", path, file->d_name);
+                                        int max = (int) (fileLen + 1 + strlen(path));
+                                        childPath[max] = '\0';
+                                        char *temp = malloc((max + 1) * sizeof(char));
+                                        strncpy(temp, childPath, (size_t) max);
+                                        *(temp + max) = '\0';
+                                        *(source + (len++)) = temp;
+                                    }
+                                    break;
                                 }
                             }
                         }
-                        free(last);
+
                     }
                 }
             } else {
                 if (depth <= 3) {
                     //是目录
-                    sprintf(childpath, "%s/%s", path, file->d_name);
-                    childpath[strlen(file->d_name) + 1 + strlen(path)] = '\0';
-                    scan_dir(childpath, format, source, depth + 1);
+                    sprintf(childPath, "%s/%s", path, file->d_name);
+                    childPath[strlen(file->d_name) + 1 + strlen(path)] = '\0';
+                    scan_dir(childPath, formats, source, depth + 1);
                 }
             }
         }
     }
+
     chdir("..");
     closedir(dir);
     return 0;
 }
 
 int search_mp3file(char *path, Filetemp *filetemp) {
+
     //long time = get_time();
     len = 0;
     char **filename;
     filename = malloc(256 * 256 * sizeof(char));
-    scan_dir(path, ".mp3", filename, 0);
-    //LOGE("end search_mp3file");
-    Filetemp *fileTemp;
-    fileTemp = (Filetemp *) malloc(sizeof(Filetemp));
-    fileTemp->filename = filename;
-    fileTemp->len = len;
+    // .mp3 .flac
+    char **formats = malloc(5 * 2 * sizeof(char));
+    *(formats) = ".mp3";
+    *(formats + 1) = ".flac";
+    *(formats + 2) = NULL;
+
+    scan_dir(path, formats, filename, 0);
+
     //数据是正确的
     filetemp->filename = filename;
     filetemp->len = len;
-    //LOGE("spend time= %ld", get_time() - time);
+
+    free(formats);
+
     return 0;
 }

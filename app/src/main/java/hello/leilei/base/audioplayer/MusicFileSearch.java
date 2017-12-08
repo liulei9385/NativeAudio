@@ -1,5 +1,7 @@
 package hello.leilei.base.audioplayer;
 
+import android.util.Log;
+
 import java.io.File;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -12,10 +14,8 @@ import hello.leilei.utils.FileUtils;
 import hello.leilei.utils.RxUiUtils;
 import rx.Observable;
 import rx.functions.Func0;
-import rx.functions.Func1;
 import rx.observables.ConnectableObservable;
 import rx.schedulers.Schedulers;
-import timber.log.Timber;
 
 /**
  * Created by liulei
@@ -100,7 +100,7 @@ public class MusicFileSearch {
                 });
 
         // 获取FileMetaData(请求逻辑哦)
-        Observable<List<FileMetaData>> observable = Observable.fromCallable((Func0<List<FileMetaData>>) ()
+        /*Observable<List<FileMetaData>> observable = Observable.fromCallable((Func0<List<FileMetaData>>) ()
                 -> mLyricPresenter.getMetaDataWithResolver())
                 .flatMap(new Func1<List<FileMetaData>, Observable<List<FileMetaData>>>() {
                     @Override
@@ -112,13 +112,13 @@ public class MusicFileSearch {
                         Timber.d("ContentResolver 获取");
                         return Observable.just(fileMetaDatas);
                     }
-                });
+                });*/
 
         Observable.just(null)
                 .flatMap((ojb) -> {
                     FileMetaDataRepo metaDataRepo = FileMetaDataRepo.getInstance();
                     if (force || CollectionUtils.isEmpty(metaDataRepo.getFileMetaDataList()))
-                        return observable.subscribeOn(Schedulers.io());
+                        return listObservable.subscribeOn(Schedulers.io());
                     else {
                         new PlayerLoader().getPlayer(PlayerLoader.PlayerType.EXOPLAYER)
                                 .setFileMetaDatas(metaDataRepo.getFileMetaDataList());

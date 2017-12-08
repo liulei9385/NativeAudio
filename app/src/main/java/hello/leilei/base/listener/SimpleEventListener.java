@@ -1,7 +1,6 @@
 package hello.leilei.base.listener;
 
 import com.google.android.exoplayer2.ExoPlaybackException;
-import com.google.android.exoplayer2.ExoPlayer;
 import com.google.android.exoplayer2.PlaybackParameters;
 import com.google.android.exoplayer2.Player;
 import com.google.android.exoplayer2.Timeline;
@@ -25,12 +24,10 @@ public class SimpleEventListener implements Player.EventListener {
 
     @Override
     public void onRepeatModeChanged(int repeatMode) {
-
     }
 
     @Override
     public void onShuffleModeEnabledChanged(boolean shuffleModeEnabled) {
-
     }
 
     @Override
@@ -56,4 +53,5 @@ public class SimpleEventListener implements Player.EventListener {
     @Override
     public void onSeekProcessed() {
     }
+
 }

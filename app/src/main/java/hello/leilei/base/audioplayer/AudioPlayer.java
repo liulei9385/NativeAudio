@@ -5,7 +5,6 @@ import android.net.Uri;
 
 import com.google.android.exoplayer2.DefaultLoadControl;
 import com.google.android.exoplayer2.DefaultRenderersFactory;
-import com.google.android.exoplayer2.ExoPlayer;
 import com.google.android.exoplayer2.ExoPlayerFactory;
 import com.google.android.exoplayer2.LoadControl;
 import com.google.android.exoplayer2.Player;
@@ -16,7 +15,11 @@ import com.google.android.exoplayer2.extractor.mp3.Mp3Extractor;
 import com.google.android.exoplayer2.extractor.mp4.Mp4Extractor;
 import com.google.android.exoplayer2.extractor.wav.WavExtractor;
 import com.google.android.exoplayer2.source.ExtractorMediaSource;
+import com.google.android.exoplayer2.trackselection.AdaptiveTrackSelection;
 import com.google.android.exoplayer2.trackselection.DefaultTrackSelector;
+import com.google.android.exoplayer2.trackselection.TrackSelection;
+import com.google.android.exoplayer2.trackselection.TrackSelector;
+import com.google.android.exoplayer2.upstream.DefaultBandwidthMeter;
 import com.google.android.exoplayer2.upstream.FileDataSourceFactory;
 
 import java.io.File;
@@ -36,6 +39,10 @@ import timber.log.Timber;
 
 public class AudioPlayer extends BasePlayer {
 
+    private DefaultTrackSelector trackSelector;
+
+    private static final DefaultBandwidthMeter BANDWIDTH_METER = new DefaultBandwidthMeter();
+
     private static AudioPlayer player;
     private SimpleExoPlayer exoPlayer;
     private boolean isInit = false;
@@ -53,9 +60,15 @@ public class AudioPlayer extends BasePlayer {
     }
 
     private void initPlayer() {
+
         LoadControl loadControl = new DefaultLoadControl();
-        DefaultTrackSelector trackSelector = new DefaultTrackSelector();
-        exoPlayer = ExoPlayerFactory.newSimpleInstance(new DefaultRenderersFactory(MainApplication.getApp()),
+        TrackSelection.Factory adaptiveTrackSelectionFactory = new AdaptiveTrackSelection.Factory(BANDWIDTH_METER);
+        trackSelector = new DefaultTrackSelector(adaptiveTrackSelectionFactory);
+
+        DefaultRenderersFactory defaultRenderersFactory = new DefaultRenderersFactory(MainApplication.getApp(), null,
+                DefaultRenderersFactory.EXTENSION_RENDERER_MODE_ON);
+
+        exoPlayer = ExoPlayerFactory.newSimpleInstance(defaultRenderersFactory,
                 trackSelector, loadControl);
         exoPlayer.addListener(new SimpleEventListener() {
             @Override
@@ -65,7 +78,12 @@ public class AudioPlayer extends BasePlayer {
                 }
             }
         });
+
         isInit = true;
+    }
+
+    public DefaultTrackSelector getTrackSelector() {
+        return trackSelector;
     }
 
     @SuppressLint("BinaryOperationInTimber")
@@ -76,6 +94,7 @@ public class AudioPlayer extends BasePlayer {
                 new FileDataSourceFactory(), () -> new Extractor[]{
                 new Mp3Extractor(), new WavExtractor(), new Mp4Extractor(), new FlacExtractor()
         }, null, null);
+
         exoPlayer.prepare(mediaSource);
         exoPlayer.setPlayWhenReady(true);
         setPlayerState(Player.STATE_READY);
@@ -119,10 +138,10 @@ public class AudioPlayer extends BasePlayer {
 
     private void setPlayerState(int state) {
         switch (state) {
-            case ExoPlayer.STATE_IDLE:
+            case Player.STATE_IDLE:
                 setPlayImageStateCallBack(ERROR);
                 break;
-            case ExoPlayer.STATE_READY:
+            case Player.STATE_READY:
                 setPlayImageStateCallBack(exoPlayer.getPlayWhenReady() ? PLAYED : PAUSED);
                 break;
         }
