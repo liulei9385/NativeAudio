@@ -305,6 +305,8 @@ public class LyricPresenter {
                 Artwork artwork = tag.getFirstArtwork();
                 if (artwork != null)
                     cacheArtThumbForFile(metaData, artwork.getBinaryData());
+                else
+                    Log.e(TAG, "getMetaDtaWithFlacFile: not picture data path = " + fileUri);
             }
 
             return metaData;
