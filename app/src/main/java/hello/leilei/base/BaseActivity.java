@@ -69,14 +69,14 @@ public abstract class BaseActivity extends AppCompatActivity {
 
     protected void showSToast(String msg) {
         if (mToast == null)
-            mToast = Toast.makeText(this, msg, Toast.LENGTH_SHORT);
+            mToast = Toast.makeText(getApplicationContext(), msg, Toast.LENGTH_SHORT);
         else mToast.setText(msg);
         mToast.show();
     }
 
     protected void showLToast(String msg) {
         if (mToast == null)
-            mToast = Toast.makeText(this, msg, Toast.LENGTH_LONG);
+            mToast = Toast.makeText(getApplicationContext(), msg, Toast.LENGTH_LONG);
         else mToast.setText(msg);
         mToast.show();
     }
