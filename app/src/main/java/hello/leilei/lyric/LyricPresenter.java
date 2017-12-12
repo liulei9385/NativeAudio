@@ -53,6 +53,7 @@ public class LyricPresenter {
     public static final String TAG = "LyricPresenter";
 
     private NewKugouLryicService mNewKugouLryicService;
+    private FlacFileReader flacFileReader;
 
     public LyricPresenter() {
         HttpManager httpManager = HttpManager.getInstance();
@@ -278,12 +279,13 @@ public class LyricPresenter {
 
             FileMetaData metaData = new FileMetaData();
 
-            FlacFileReader flacFileReader = new FlacFileReader();
+            if (flacFileReader == null)
+                flacFileReader = new FlacFileReader();
             AudioFile audioFile = flacFileReader.read(new File(fileUri));
             Tag tag = audioFile.getTag();
             AudioHeader audioHeader = audioFile.getAudioHeader();
 
-            metaData.author = tag.getFirst(FieldKey.ALBUM_ARTIST);
+            metaData.author = tag.getFirst(FieldKey.ARTIST);
             metaData.duration = audioHeader.getAudioDataLength() + "";
             metaData.album = tag.getFirst(FieldKey.ALBUM);
             metaData.artlist = tag.getFirst(FieldKey.ARTIST);
