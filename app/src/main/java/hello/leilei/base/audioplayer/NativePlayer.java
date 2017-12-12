@@ -16,6 +16,8 @@ import rx.functions.Func0;
  */
 public class NativePlayer extends BasePlayer {
 
+
+
     private static NativePlayer player;
 
     public static final int SEEKBAR_MAX = 1000;
