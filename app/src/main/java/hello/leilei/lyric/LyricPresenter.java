@@ -11,6 +11,13 @@ import android.support.v4.content.PermissionChecker;
 import android.text.TextUtils;
 import android.util.Log;
 
+import org.jaudiotagger.audio.AudioFile;
+import org.jaudiotagger.audio.AudioHeader;
+import org.jaudiotagger.audio.flac.FlacFileReader;
+import org.jaudiotagger.tag.FieldKey;
+import org.jaudiotagger.tag.Tag;
+import org.jaudiotagger.tag.images.Artwork;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -270,25 +277,29 @@ public class LyricPresenter {
         try {
 
             FileMetaData metaData = new FileMetaData();
+
+            FlacFileReader flacFileReader = new FlacFileReader();
+            AudioFile audioFile = flacFileReader.read(new File(fileUri));
+            Tag tag = audioFile.getTag();
+            AudioHeader audioHeader = audioFile.getAudioHeader();
+
+            metaData.author = tag.getFirst(FieldKey.ALBUM_ARTIST);
+            metaData.duration = audioHeader.getAudioDataLength() + "";
+            metaData.album = tag.getFirst(FieldKey.ALBUM);
+            metaData.artlist = tag.getFirst(FieldKey.ARTIST);
+            metaData.title = tag.getFirst(FieldKey.TITLE);
+
             metaData.setUri(fileUri);
-
-            /*FFmpegMediaMetadataRetriever mmr = new FFmpegMediaMetadataRetriever();
-            mmr.setDataSource(fileUri);
-            metaData.author = mmr.extractMetadata(FFmpegMediaMetadataRetriever.METADATA_KEY_ALBUM_ARTIST);
-            metaData.duration = mmr.extractMetadata(FFmpegMediaMetadataRetriever.METADATA_KEY_DURATION);
-            metaData.album = mmr.extractMetadata(FFmpegMediaMetadataRetriever.METADATA_KEY_ALBUM);
-            metaData.artlist = mmr.extractMetadata(FFmpegMediaMetadataRetriever.METADATA_KEY_ARTIST);
-            metaData.title = mmr.extractMetadata(FFmpegMediaMetadataRetriever.METADATA_KEY_TITLE);*/
-
             metaData.phoneid = FileMetaData.getUuid();
 
             //notice 缓存图片，并生成一个对应的uri供glide加载
             File sdCacheFile = FileUtils.createSdCacheFile(MainApplication.getApp(),
                     getArtThumbName(metaData));
-            /*if (FileUtils.getFileSize(sdCacheFile) <= 0L)
-                cacheArtThumbForFile(metaData, mmr.getEmbeddedPicture());
-
-            mmr.release();*/
+            if (FileUtils.getFileSize(sdCacheFile) <= 0L) {
+                Artwork artwork = tag.getFirstArtwork();
+                if (artwork != null)
+                    cacheArtThumbForFile(metaData, artwork.getBinaryData());
+            }
 
             return metaData;
 
