@@ -16,6 +16,7 @@ import org.jaudiotagger.audio.AudioHeader;
 import org.jaudiotagger.audio.flac.FlacFileReader;
 import org.jaudiotagger.tag.FieldKey;
 import org.jaudiotagger.tag.Tag;
+import org.jaudiotagger.tag.TagOptionSingleton;
 import org.jaudiotagger.tag.images.Artwork;
 
 import java.io.File;
@@ -279,8 +280,11 @@ public class LyricPresenter {
 
             FileMetaData metaData = new FileMetaData();
 
-            if (flacFileReader == null)
+            if (flacFileReader == null) {
+                TagOptionSingleton.getInstance().setAndroid(true);
                 flacFileReader = new FlacFileReader();
+            }
+
             AudioFile audioFile = flacFileReader.read(new File(fileUri));
             Tag tag = audioFile.getTag();
             AudioHeader audioHeader = audioFile.getAudioHeader();
